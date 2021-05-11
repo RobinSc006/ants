@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Mul, Sub, Neg};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
@@ -96,12 +96,12 @@ impl Vector {
         );
     }
 
-    pub fn angle_to(&self, other: Vector) -> f64 {
-        let delta_x = other.x - self.x;
-        let delta_y = self.y - other.y;
+    pub fn angle_to(&self, other: Vector) -> f64{
+        let delta_x = self.x - other.x;
+        let delta_y = other.y - self.y;
 
         let theta_radians = f64::atan2(delta_y, delta_x);
-
+    
         return theta_radians * (180.0 / std::f64::consts::PI);
     }
 

@@ -17,12 +17,15 @@ pub struct Ant {
     sense_radius: f64,
     pickup_radius: f64,
 
+    /// Not as in traditional delta. I just borrow the term for 'time step'
+    delta_time: f64,
+
     desired_wander_dir: Vector,
     targeted_food_pos: Vector,
 }
 
 impl Ant {
-    pub fn new(spawn_constaints: (Vector, Vector)) -> Self {
+    pub fn new(spawn_constaints: (Vector, Vector), delta: f64) -> Self {
         let mut spawn_pos = Vector::new(0.0, 0.0);
 
         spawn_pos.x = random::num((spawn_constaints.0.x as i64, spawn_constaints.1.y as i64));
@@ -37,6 +40,7 @@ impl Ant {
             wander_direction_sway: 0.15,
             sense_radius: 50.0,
             pickup_radius: 5.0,
+            delta_time: delta,
 
             desired_wander_dir: Vector::from_angle(random::num((0, 360))).normalize(),
             targeted_food_pos: Vector::new(0.0, 0.0),
@@ -52,7 +56,7 @@ impl Ant {
                 self.target();
             }
             State::Carry => {
-                self.vel = Vector::new(0.0, 0.0);
+                //self.wander();
             }
         }
 
@@ -74,7 +78,7 @@ impl Ant {
     }
 
     fn update_pos(&mut self) {
-        self.pos = self.pos + self.vel;
+        self.pos = self.pos + self.vel.multiply_float(self.delta_time);
     }
 
     pub fn collect_food(&mut self) {
@@ -100,5 +104,9 @@ impl Ant {
 
     pub fn is_targeting(&self) -> bool {
         return self.state == State::Target;
+    }
+
+    pub fn is_carrying(&self) -> bool {
+        return self.state == State::Carry;
     }
 }

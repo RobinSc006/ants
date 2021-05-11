@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::{config::Config, vector::Vector};
 
 extern crate piston_window;
 
@@ -15,6 +15,12 @@ pub struct App {
 
 impl App {
     pub fn init() -> Self {
+        let a =Vector::new(0.0, 0.0);
+        let b =Vector::new(100.0, 10.0);
+
+        println!("{}", a.angle_to(b));
+        println!("{:?}", Vector::from_angle(-a.angle_to(b)));
+
         return App {
             config: Config::load("config.ini"),
         };
@@ -48,6 +54,7 @@ impl App {
             self.config.get_parameter("num_food").vals[0] as u16,
             self.config.get_parameter("debug").vals[0] as u8 != 0,
             color_theme,
+            self.config.get_parameter("delta_time").vals[0] as f64,
         );
 
         // Event loop
