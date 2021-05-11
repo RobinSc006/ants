@@ -20,7 +20,13 @@ pub struct World {
 }
 
 impl World {
-    pub fn new(num_ants: u16, num_food: u16, debug_gismo: bool, theme: color::Theme, delta: f64) -> Self {
+    pub fn new(
+        num_ants: u16,
+        num_food: u16,
+        debug_gismo: bool,
+        theme: color::Theme,
+        delta: f64,
+    ) -> Self {
         let mut world = World {
             ants: Vec::new(),
             food_on_map: Vec::new(),
@@ -100,19 +106,21 @@ impl World {
                 for (index, food) in self.food_on_map.clone().iter().enumerate() {
                     let dist_x = ant.pos.x - food.pos.x;
                     let dist_y = ant.pos.y - food.pos.y;
-    
+
                     let sum_xy = dist_x * dist_x + dist_y * dist_y;
-    
+
                     if !ant.is_targeting() {
                         // Check if food is visible
                         if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
                             ant.set_target(*food);
                         }
-                    } else {
+                    }
+
+                    if true {
                         // Check if food is colliding
                         if f64::sqrt(sum_xy) <= ant.get_pickup_radius() {
-                            self.food_on_map.remove(index - removed_food);
                             ant.collect_food();
+                            self.food_on_map.remove(index - removed_food);
                             removed_food += 1;
                         }
                     }

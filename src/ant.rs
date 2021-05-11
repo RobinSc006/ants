@@ -82,6 +82,7 @@ impl Ant {
     }
 
     pub fn collect_food(&mut self) {
+        self.targeted_food_pos = Vector::new(0.0, 0.0);
         self.state = State::Carry;
     }
 
