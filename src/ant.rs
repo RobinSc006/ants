@@ -1,9 +1,10 @@
-use crate::{food::Food, random};
 use crate::vector::Vector;
+use crate::{food::Food, random};
 #[derive(PartialEq, Eq)]
 pub enum State {
     Wander,
     Target,
+    Carry,
 }
 
 pub struct Ant {
@@ -14,6 +15,7 @@ pub struct Ant {
     move_speed: f64,
     wander_direction_sway: f64,
     sense_radius: f64,
+    pickup_radius: f64,
 
     desired_wander_dir: Vector,
     targeted_food_pos: Vector,
@@ -34,6 +36,7 @@ impl Ant {
             move_speed: 1.0,
             wander_direction_sway: 0.15,
             sense_radius: 50.0,
+            pickup_radius: 5.0,
 
             desired_wander_dir: Vector::from_angle(random::num((0, 360))).normalize(),
             targeted_food_pos: Vector::new(0.0, 0.0),
@@ -48,6 +51,9 @@ impl Ant {
             State::Target => {
                 self.target();
             }
+            State::Carry => {
+                self.vel = Vector::new(0.0, 0.0);
+            }
         }
 
         self.update_pos();
@@ -60,18 +66,19 @@ impl Ant {
         .normalize();
 
         self.vel = self.desired_wander_dir.multiply_float(self.move_speed);
-
-        // Damn, that actually worked
     }
 
+    /// Isn't working correctly, though it does somewhat do the job.
     fn target(&mut self) {
-        let target_angle = f64::atan2(self.targeted_food_pos.y - self.pos.y, self.targeted_food_pos.x - self.pos.x) * 180.0 / std::f64::consts::PI;
-
-        self.vel = Vector::from_angle(-target_angle).normalize().multiply_float(self.move_speed);
+        self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_food_pos));
     }
 
     fn update_pos(&mut self) {
         self.pos = self.pos + self.vel;
+    }
+
+    pub fn collect_food(&mut self) {
+        self.state = State::Carry;
     }
 
     pub fn set_target(&mut self, food: Food) {
@@ -81,6 +88,14 @@ impl Ant {
 
     pub fn get_target_dir(&self) -> f64 {
         return self.vel.degrees();
+    }
+
+    pub fn get_sense_radius(&self) -> f64 {
+        return self.sense_radius;
+    }
+
+    pub fn get_pickup_radius(&self) -> f64 {
+        return self.pickup_radius;
     }
 
     pub fn is_targeting(&self) -> bool {

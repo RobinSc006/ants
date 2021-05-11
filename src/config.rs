@@ -1,5 +1,5 @@
-use std::{fs, path::PathBuf};
 use std::collections::HashMap;
+use std::{fs, path::PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct ConfigParameter {
@@ -16,7 +16,7 @@ impl Config {
     pub fn load(filename: &str) -> Self {
         let mut conf = Config {
             content: fs::read_to_string(Config::get_conf_path().join(filename))
-                .expect("Something went wrong reading the file"),
+                .expect("something went wrong reading the file"),
             parameters: HashMap::new(),
         };
 
@@ -34,15 +34,25 @@ impl Config {
 
             let mut param_values: Vec<f64> = Vec::new();
 
-            for param_val_txt in param_conf.replace(" ", "").split(",").collect::<Vec<&str>>() {
+            for param_val_txt in param_conf
+                .replace(" ", "")
+                .split(",")
+                .collect::<Vec<&str>>()
+            {
                 param_values.push(param_val_txt.parse().unwrap());
             }
 
-            self.parameters.insert(param_name.to_string(), ConfigParameter {text: param_conf.to_string(), vals: param_values});
+            self.parameters.insert(
+                param_name.to_string(),
+                ConfigParameter {
+                    text: param_conf.to_string(),
+                    vals: param_values,
+                },
+            );
         }
     }
 
-    pub fn get_parameter(&self, name: &str) -> ConfigParameter{
+    pub fn get_parameter(&self, name: &str) -> ConfigParameter {
         return self.parameters[name].clone();
     }
 

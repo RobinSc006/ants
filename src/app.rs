@@ -1,4 +1,4 @@
-use crate::{ config::Config};
+use crate::config::Config;
 
 extern crate piston_window;
 
@@ -43,7 +43,12 @@ impl App {
         let mut tick_clock = Instant::now();
 
         // World creation
-        let mut world: World = World::new(self.config.get_parameter("num_ants").vals[0] as u16, color_theme);
+        let mut world: World = World::new(
+            self.config.get_parameter("num_ants").vals[0] as u16,
+            self.config.get_parameter("num_food").vals[0] as u16,
+            self.config.get_parameter("debug").vals[0] as u8 != 0,
+            color_theme,
+        );
 
         // Event loop
         while let Some(event) = window.next() {

@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Vector {
@@ -60,6 +60,17 @@ impl Div for Vector {
     }
 }
 
+impl Neg for Vector {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        return Self {
+            x: -self.x,
+            y: -self.y,
+        };
+    }
+}
+
 impl Vector {
     pub fn new(x: f64, y: f64) -> Self {
         return Self { x: x, y: y };
@@ -85,8 +96,13 @@ impl Vector {
         );
     }
 
-    pub fn distance(&self, other: Vector) {
-        
+    pub fn angle_to(&self, other: Vector) -> f64 {
+        let delta_x = other.x - self.x;
+        let delta_y = self.y - other.y;
+
+        let theta_radians = f64::atan2(delta_y, delta_x);
+
+        return theta_radians * (180.0 / std::f64::consts::PI);
     }
 
     pub fn multiply_float(&self, val: f64) -> Vector {

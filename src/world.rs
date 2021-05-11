@@ -1,28 +1,39 @@
-use piston_window::{rectangle, Event, PistonWindow, Transformed};
+use piston_window::{ellipse, rectangle, Event, PistonWindow, Transformed};
 
-use crate::{ant::Ant, color::{self}, config::{Config, ConfigParameter}, food::Food, random, vector::Vector};
+use crate::{
+    ant::Ant,
+    color::{self},
+    food::Food,
+    random,
+    vector::Vector,
+};
 
 pub struct World {
     ants: Vec<Ant>,
-    food: Vec<Food>,
+    food_on_map: Vec<Food>,
 
     num_ants: u16,
 
     color_theme: color::Theme,
+    render_debug_gismo: bool,
 }
 
 impl World {
-    pub fn new(num_ants: u16, theme: color::Theme) -> Self {
+    pub fn new(num_ants: u16, num_food: u16, debug_gismo: bool, theme: color::Theme) -> Self {
         let mut world = World {
             ants: Vec::new(),
-            food: Vec::new(),
+            food_on_map: Vec::new(),
             num_ants: num_ants,
 
+            render_debug_gismo: debug_gismo,
             color_theme: theme,
         };
 
         world.populate();
-        world.cluster_food(200, (Vector::new(600.0, 600.0), Vector::new(650.0, 650.0)));
+        world.cluster_food(
+            num_food,
+            (Vector::new(600.0, 600.0), Vector::new(650.0, 650.0)),
+        );
 
         return world;
     }
@@ -30,7 +41,7 @@ impl World {
     pub fn render(&self, window: &mut PistonWindow, event: Event) {
         // render food
         window.draw_2d(&event, |context, graphics, _device| {
-            for f in self.food.iter() {
+            for f in self.food_on_map.iter() {
                 rectangle(
                     self.color_theme.food_color,
                     [f.pos.x, f.pos.y, 3.0, 3.0],
@@ -57,23 +68,46 @@ impl World {
                     transform,
                     graphics,
                 );
+
+                if self.render_debug_gismo {
+                    // Render ant sight
+                    ellipse(
+                        self.color_theme.gismo_color,
+                        [
+                            ant.pos.x,
+                            ant.pos.y,
+                            ant.get_sense_radius() * 2.0,
+                            ant.get_sense_radius() * 2.0,
+                        ],
+                        context.transform.trans(
+                            -(ant.get_sense_radius() * 2.0) / 2.0,
+                            -(ant.get_sense_radius() * 2.0) / 2.0,
+                        ),
+                        graphics,
+                    );
+                }
             }
         });
     }
 
     pub fn update(&mut self) {
         for ant in self.ants.iter_mut() {
-            for f in self.food.iter_mut() {
+            for (index, food) in self.food_on_map.clone().iter().enumerate() {
+                let dist_x = ant.pos.x - food.pos.x;
+                let dist_y = ant.pos.y - food.pos.y;
+
+                let sum_xy = dist_x * dist_x + dist_y * dist_y;
+
                 if !ant.is_targeting() {
-                    let dist_x = ant.pos.x - f.pos.x;
-                    let dist_y = ant.pos.y - f.pos.y;
-
-                    let sum_xy = dist_x * dist_x + dist_y * dist_y;
-
-                    // Check if food visible
-                    if f64::sqrt(sum_xy) <= 50.0 {
-                        f.color = color::get_color((255, 0, 0));
-                        ant.set_target(*f);
+                    // Check if food is visible
+                    if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
+                        ant.set_target(*food);
+                    }
+                } else {
+                    // Check if food is colliding
+                    if f64::sqrt(sum_xy) <= ant.get_pickup_radius() {
+                        self.food_on_map.remove(index);
+                        ant.collect_food();
                     }
                 }
             }
@@ -97,7 +131,7 @@ impl World {
             spawn_pos.x = random::num((constraits.0.x as i64, constraits.1.y as i64));
             spawn_pos.y = random::num((constraits.0.x as i64, constraits.1.y as i64));
 
-            self.food.push(Food::new(spawn_pos));
+            self.food_on_map.push(Food::new(spawn_pos));
         }
     }
 }
