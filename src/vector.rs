@@ -20,7 +20,10 @@ impl Add for Vector {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Self {x: self.x + other.x, y: self.y + other.y}
+        Self {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
     }
 }
 
@@ -28,7 +31,10 @@ impl Sub for Vector {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Self {x: self.x - other.x, y: self.y - other.y}
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
     }
 }
 
@@ -36,7 +42,10 @@ impl Mul for Vector {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Self {x: self.x * other.x, y: self.y * other.y}
+        Self {
+            x: self.x * other.x,
+            y: self.y * other.y,
+        }
     }
 }
 
@@ -44,30 +53,40 @@ impl Div for Vector {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        Self {x: self.x / other.x, y: self.y / other.y}
+        Self {
+            x: self.x / other.x,
+            y: self.y / other.y,
+        }
     }
 }
 
-
 impl Vector {
     pub fn new(x: f64, y: f64) -> Self {
-        return Self {
-            x: x,
-            y: y,
-        };
+        return Self { x: x, y: y };
     }
 
-    pub fn from_angle(angle: f64) -> Self{
+    pub fn from_angle(angle: f64) -> Self {
         let angle_radians = angle * std::f64::consts::PI / 180.0;
         return Vector::new(angle_radians.sin(), angle_radians.cos());
+    }
+
+    pub fn degrees(&self) -> f64 {
+        return f64::atan2(self.x, self.y) * 180.0 / std::f64::consts::PI;
     }
 
     pub fn sqrt_magnitude(&self) -> f64 {
         return f64::sqrt(self.x.powi(2) + self.y.powi(2));
     }
 
-    pub fn normalize(&self) -> Vector{
-        return Vector::new(self.x / self.sqrt_magnitude(), self.y / self.sqrt_magnitude());
+    pub fn normalize(&self) -> Vector {
+        return Vector::new(
+            self.x / self.sqrt_magnitude(),
+            self.y / self.sqrt_magnitude(),
+        );
+    }
+
+    pub fn distance(&self, other: Vector) {
+        
     }
 
     pub fn multiply_float(&self, val: f64) -> Vector {
