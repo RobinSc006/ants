@@ -42,6 +42,7 @@ name = "ants"
 version = "0.1.0"
 dependencies = [
  "find_folder",
+ "image",
  "piston_window",
  "rand",
 ]

@@ -1,10 +1,14 @@
+use crate::{marker::{Marker, MarkerType}, random};
 use crate::vector::Vector;
-use crate::{random};
+
+use std::collections::LinkedList;
+
 #[derive(PartialEq, Eq)]
 pub enum State {
     Wander,
     Target,
-    Carry,
+    FollowReturn,
+    FollowExplore,
 }
 
 pub struct Ant {
@@ -19,13 +23,21 @@ pub struct Ant {
 
     /// Not as in traditional delta. I just borrow the term for 'time step'
     delta_time: f64,
+    ticks_since_marker: u32,
 
     desired_wander_dir: Vector,
     targeted_pos: Vector,
 }
 
 impl Ant {
-    pub fn new(spawn_constaints: (Vector, Vector), delta: f64, speed: f64, wander_sway: f64, sense_radius: f64, pickup_radius: f64) -> Self {
+    pub fn new(
+        spawn_constaints: (Vector, Vector),
+        delta: f64,
+        speed: f64,
+        wander_sway: f64,
+        sense_radius: f64,
+        pickup_radius: f64,
+    ) -> Self {
         let mut spawn_pos = Vector::new(0.0, 0.0);
 
         spawn_pos.x = random::num((spawn_constaints.0.x as i64, spawn_constaints.1.y as i64));
@@ -41,6 +53,8 @@ impl Ant {
             sense_radius: sense_radius,
             pickup_radius: pickup_radius,
             delta_time: delta,
+            
+            ticks_since_marker: 0,
 
             desired_wander_dir: Vector::from_angle(random::num((0, 360))).normalize(),
             targeted_pos: Vector::new(0.0, 0.0),
@@ -55,12 +69,16 @@ impl Ant {
             State::Target => {
                 self.target();
             }
-            State::Carry => {
+            State::FollowReturn => {
                 println!("a");
                 //self.wander();
             }
+            State::FollowExplore => {
+                
+            }
         }
 
+        self.ticks_since_marker += 1;
         self.update_pos();
     }
 
@@ -73,9 +91,12 @@ impl Ant {
         self.vel = self.desired_wander_dir.multiply_float(self.move_speed);
     }
 
-    /// Isn't working correctly, though it does somewhat do the job.
     fn target(&mut self) {
         self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_pos));
+    }
+
+    pub fn drop_marker(&self, m_type: MarkerType, markers: &mut LinkedList<Marker>) {
+        markers.push_back(Marker {pos: self.pos, marker_type: m_type});
     }
 
     fn update_pos(&mut self) {
@@ -84,7 +105,7 @@ impl Ant {
 
     pub fn collect_food(&mut self) {
         self.targeted_pos = Vector::new(0.0, 0.0);
-        self.state = State::Carry;
+        self.state = State::FollowReturn;
     }
 
     pub fn set_target(&mut self, target: Vector) {
@@ -109,6 +130,18 @@ impl Ant {
     }
 
     pub fn is_carrying(&self) -> bool {
-        return self.state == State::Carry;
+        return self.state == State::FollowReturn;
+    }
+
+    pub fn is_wandering(&self) -> bool {
+        return self.state == State::Wander;
+    }
+
+    pub fn should_drop_marker(&mut self, marker_ticks: u32) -> bool {
+        if self.ticks_since_marker >= marker_ticks {
+            self.ticks_since_marker = 0;   
+            return true;
+        } 
+        return false;
     }
 }

@@ -37,6 +37,8 @@ impl App {
                 .graphics_api(opengl)
                 .build()
                 .unwrap();
+        let mut texture_context = window.create_texture_context();
+        let texture_settings = TextureSettings::new();
 
         // Tick system setup
         let tick_time: u128 = self.config.get_parameter("tick_time").vals[0] as u128;
@@ -46,14 +48,19 @@ impl App {
         let mut world: World = World::new(
             self.config.get_parameter("num_ants").vals[0] as u16,
             self.config.get_parameter("num_food").vals[0] as u16,
-            (self.config.get_parameter("ant_pos").vals[0], self.config.get_parameter("ant_pos").vals[1]),
+            (
+                self.config.get_parameter("ant_pos").vals[0],
+                self.config.get_parameter("ant_pos").vals[1],
+            ),
             self.config.get_parameter("ant_speed").vals[0],
             self.config.get_parameter("ant_wander_sway").vals[0],
             self.config.get_parameter("ant_sense_radius").vals[0],
             self.config.get_parameter("ant_pickup_radius").vals[0],
             self.config.get_parameter("debug").vals[0] as u8 != 0,
+            self.config.get_parameter("ant_max_markers").vals[0].trunc() as u16,
             color_theme,
             self.config.get_parameter("delta_time").vals[0] as f64,
+            window_dimensions,
         );
 
         // Event loop
@@ -71,7 +78,7 @@ impl App {
             });
 
             // Render ants
-            world.render(&mut window, event);
+            world.render(&mut window, &event, &mut texture_context, &texture_settings);
         }
     }
 }
