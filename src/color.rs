@@ -7,6 +7,7 @@ pub struct Theme {
     pub food_color: [f32; 4],
     pub font_color: [f32; 4],
     pub gismo_color: [f32; 4],
+    pub ant_hill_color: [f32; 4],
 }
 
 impl Theme {
@@ -17,6 +18,7 @@ impl Theme {
             food_color: vec_to_color_rgb(&config.get_parameter("food_color").vals),
             font_color: vec_to_color_rgb(&config.get_parameter("font_color").vals),
             gismo_color: vec_to_color_rgba(&config.get_parameter("gismo_color").vals),
+            ant_hill_color: vec_to_color_rgb(&config.get_parameter("ant_hill_color").vals),
         };
     }
 }

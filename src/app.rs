@@ -46,6 +46,11 @@ impl App {
         let mut world: World = World::new(
             self.config.get_parameter("num_ants").vals[0] as u16,
             self.config.get_parameter("num_food").vals[0] as u16,
+            (self.config.get_parameter("ant_pos").vals[0], self.config.get_parameter("ant_pos").vals[1]),
+            self.config.get_parameter("ant_speed").vals[0],
+            self.config.get_parameter("ant_wander_sway").vals[0],
+            self.config.get_parameter("ant_sense_radius").vals[0],
+            self.config.get_parameter("ant_pickup_radius").vals[0],
             self.config.get_parameter("debug").vals[0] as u8 != 0,
             color_theme,
             self.config.get_parameter("delta_time").vals[0] as f64,

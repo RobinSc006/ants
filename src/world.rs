@@ -2,6 +2,7 @@ use piston_window::{ellipse, rectangle, Event, PistonWindow, Transformed};
 
 use crate::{
     ant::Ant,
+    ant_hill::AntHill,
     color::{self},
     food::Food,
     random,
@@ -10,6 +11,7 @@ use crate::{
 
 pub struct World {
     ants: Vec<Ant>,
+    ant_hill: AntHill,
     food_on_map: Vec<Food>,
 
     num_ants: u16,
@@ -23,6 +25,12 @@ impl World {
     pub fn new(
         num_ants: u16,
         num_food: u16,
+        ant_pos: (f64, f64),
+        speed: f64,
+        wander_sway: f64,
+        sense_radius: f64,
+        pickup_radius: f64,
+
         debug_gismo: bool,
         theme: color::Theme,
         delta: f64,
@@ -30,6 +38,8 @@ impl World {
         let mut world = World {
             ants: Vec::new(),
             food_on_map: Vec::new(),
+            ant_hill: AntHill::new(Vector::new(ant_pos.0, ant_pos.1), 30.0),
+
             num_ants: num_ants,
             delta_time: delta,
 
@@ -37,7 +47,7 @@ impl World {
             color_theme: theme,
         };
 
-        world.populate();
+        world.populate(speed, wander_sway, sense_radius, pickup_radius);
         world.cluster_food(
             num_food,
             (Vector::new(600.0, 600.0), Vector::new(650.0, 650.0)),
@@ -96,14 +106,30 @@ impl World {
                 }
             }
         });
+
+        // render ant hill
+        window.draw_2d(&event, |context, graphics, _device| {
+            ellipse(
+                self.color_theme.ant_hill_color,
+                [
+                    self.ant_hill.get_pos().x,
+                    self.ant_hill.get_pos().y,
+                    self.ant_hill.get_radius() * 2.0,
+                    self.ant_hill.get_radius() * 2.0,
+                ],
+                context.transform.trans(
+                    -(self.ant_hill.get_radius() * 2.0) / 2.0,
+                    -(self.ant_hill.get_radius() * 2.0) / 2.0,
+                ),
+                graphics,
+            );
+        });
     }
 
     pub fn update(&mut self) {
-        let mut removed_food: usize = 0;
-
         for ant in self.ants.iter_mut() {
             if !ant.is_carrying() {
-                for (index, food) in self.food_on_map.clone().iter().enumerate() {
+                for (_index, food) in self.food_on_map.clone().iter().enumerate() {
                     let dist_x = ant.pos.x - food.pos.x;
                     let dist_y = ant.pos.y - food.pos.y;
 
@@ -112,30 +138,35 @@ impl World {
                     if !ant.is_targeting() {
                         // Check if food is visible
                         if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
-                            ant.set_target(*food);
+                            ant.set_target(food.pos);
                         }
-                    }
-
-                    if true {
+                    } else {
                         // Check if food is colliding
                         if f64::sqrt(sum_xy) <= ant.get_pickup_radius() {
                             ant.collect_food();
-                            self.food_on_map.remove(index - removed_food);
-                            removed_food += 1;
+                            ant.set_target(self.ant_hill.get_pos());
                         }
                     }
                 }
+            } else {
             }
 
             ant.update();
         }
     }
 
-    fn populate(&mut self) {
-        let spawn_area = (Vector::new(100.0, 100.0), Vector::new(500.0, 500.0));
+    fn populate(&mut self, speed: f64, wander_sway: f64, sense_radius: f64, pickup_radius: f64) {
+        let spawn_area = (
+            self.ant_hill.get_pos(),
+            self.ant_hill.get_pos()
+                + Vector::new(
+                    self.ant_hill.get_radius() / 2.0,
+                    self.ant_hill.get_radius() / 2.0,
+                ),
+        );
 
         for _ in 0..self.num_ants {
-            self.ants.push(Ant::new(spawn_area, self.delta_time));
+            self.ants.push(Ant::new(spawn_area, self.delta_time, speed, wander_sway, sense_radius, pickup_radius));
         }
     }
 

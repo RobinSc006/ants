@@ -1,5 +1,5 @@
 use crate::vector::Vector;
-use crate::{food::Food, random};
+use crate::{random};
 #[derive(PartialEq, Eq)]
 pub enum State {
     Wander,
@@ -21,11 +21,11 @@ pub struct Ant {
     delta_time: f64,
 
     desired_wander_dir: Vector,
-    targeted_food_pos: Vector,
+    targeted_pos: Vector,
 }
 
 impl Ant {
-    pub fn new(spawn_constaints: (Vector, Vector), delta: f64) -> Self {
+    pub fn new(spawn_constaints: (Vector, Vector), delta: f64, speed: f64, wander_sway: f64, sense_radius: f64, pickup_radius: f64) -> Self {
         let mut spawn_pos = Vector::new(0.0, 0.0);
 
         spawn_pos.x = random::num((spawn_constaints.0.x as i64, spawn_constaints.1.y as i64));
@@ -36,14 +36,14 @@ impl Ant {
             vel: Vector::new(0.0, 0.0),
             state: State::Wander,
 
-            move_speed: 1.0,
-            wander_direction_sway: 0.15,
-            sense_radius: 50.0,
-            pickup_radius: 5.0,
+            move_speed: speed,
+            wander_direction_sway: wander_sway,
+            sense_radius: sense_radius,
+            pickup_radius: pickup_radius,
             delta_time: delta,
 
             desired_wander_dir: Vector::from_angle(random::num((0, 360))).normalize(),
-            targeted_food_pos: Vector::new(0.0, 0.0),
+            targeted_pos: Vector::new(0.0, 0.0),
         };
     }
 
@@ -56,6 +56,7 @@ impl Ant {
                 self.target();
             }
             State::Carry => {
+                println!("a");
                 //self.wander();
             }
         }
@@ -74,7 +75,7 @@ impl Ant {
 
     /// Isn't working correctly, though it does somewhat do the job.
     fn target(&mut self) {
-        self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_food_pos));
+        self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_pos));
     }
 
     fn update_pos(&mut self) {
@@ -82,12 +83,12 @@ impl Ant {
     }
 
     pub fn collect_food(&mut self) {
-        self.targeted_food_pos = Vector::new(0.0, 0.0);
+        self.targeted_pos = Vector::new(0.0, 0.0);
         self.state = State::Carry;
     }
 
-    pub fn set_target(&mut self, food: Food) {
-        self.targeted_food_pos = food.pos;
+    pub fn set_target(&mut self, target: Vector) {
+        self.targeted_pos = target;
         self.state = State::Target;
     }
 
