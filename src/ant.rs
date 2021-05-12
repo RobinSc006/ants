@@ -1,5 +1,8 @@
-use crate::{marker::{Marker, MarkerType}, random};
 use crate::vector::Vector;
+use crate::{
+    marker::{Marker, MarkerType},
+    random,
+};
 
 use std::collections::LinkedList;
 
@@ -53,7 +56,7 @@ impl Ant {
             sense_radius: sense_radius,
             pickup_radius: pickup_radius,
             delta_time: delta,
-            
+
             ticks_since_marker: 0,
 
             desired_wander_dir: Vector::from_angle(random::num((0, 360))).normalize(),
@@ -73,9 +76,7 @@ impl Ant {
                 println!("a");
                 //self.wander();
             }
-            State::FollowExplore => {
-                
-            }
+            State::FollowExplore => {}
         }
 
         self.ticks_since_marker += 1;
@@ -96,7 +97,10 @@ impl Ant {
     }
 
     pub fn drop_marker(&self, m_type: MarkerType, markers: &mut LinkedList<Marker>) {
-        markers.push_back(Marker {pos: self.pos, marker_type: m_type});
+        markers.push_back(Marker {
+            pos: self.pos,
+            marker_type: m_type,
+        });
     }
 
     fn update_pos(&mut self) {
@@ -139,9 +143,9 @@ impl Ant {
 
     pub fn should_drop_marker(&mut self, marker_ticks: u32) -> bool {
         if self.ticks_since_marker >= marker_ticks {
-            self.ticks_since_marker = 0;   
+            self.ticks_since_marker = 0;
             return true;
-        } 
+        }
         return false;
     }
 }

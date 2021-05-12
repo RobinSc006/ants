@@ -229,8 +229,7 @@ impl World {
                         }
                     }
                 }
-            } 
-            else {
+            } else {
                 // TODO implement carry
             }
 

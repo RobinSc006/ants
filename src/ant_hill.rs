@@ -1,6 +1,5 @@
 use crate::vector::Vector;
 
-
 #[allow(dead_code)]
 pub struct AntHill {
     pos: Vector,

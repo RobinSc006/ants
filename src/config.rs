@@ -27,28 +27,30 @@ impl Config {
 
     fn index(&mut self) {
         for line in self.content.lines() {
-            let param_body: Vec<&str> = line.split(" ").collect();
+            if line != "" {
+                let param_body: Vec<&str> = line.split(" ").collect();
 
-            let param_name = param_body[0];
-            let param_conf = param_body[1];
+                let param_name = param_body[0];
+                let param_conf = param_body[1];
 
-            let mut param_values: Vec<f64> = Vec::new();
+                let mut param_values: Vec<f64> = Vec::new();
 
-            for param_val_txt in param_conf
-                .replace(" ", "")
-                .split(",")
-                .collect::<Vec<&str>>()
-            {
-                param_values.push(param_val_txt.parse().unwrap());
+                for param_val_txt in param_conf
+                    .replace(" ", "")
+                    .split(",")
+                    .collect::<Vec<&str>>()
+                {
+                    param_values.push(param_val_txt.parse().unwrap());
+                }
+
+                self.parameters.insert(
+                    param_name.to_string(),
+                    ConfigParameter {
+                        text: param_conf.to_string(),
+                        vals: param_values,
+                    },
+                );
             }
-
-            self.parameters.insert(
-                param_name.to_string(),
-                ConfigParameter {
-                    text: param_conf.to_string(),
-                    vals: param_values,
-                },
-            );
         }
     }
 
