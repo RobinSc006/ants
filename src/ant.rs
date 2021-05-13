@@ -1,10 +1,8 @@
-use crate::vector::Vector;
+use crate::{color::Theme, marker, marker_map::MarkerMap, vector::Vector};
 use crate::{
     marker::{Marker, MarkerType},
     random,
 };
-
-use std::collections::LinkedList;
 
 #[derive(PartialEq, Eq)]
 pub enum State {
@@ -21,8 +19,10 @@ pub struct Ant {
 
     move_speed: f64,
     wander_direction_sway: f64,
+
     sense_radius: f64,
     pickup_radius: f64,
+    marker_radius: f64,
 
     /// Not as in traditional delta. I just borrow the term for 'time step'
     delta_time: f64,
@@ -40,6 +40,7 @@ impl Ant {
         wander_sway: f64,
         sense_radius: f64,
         pickup_radius: f64,
+        marker_radius: f64,
     ) -> Self {
         let mut spawn_pos = Vector::new(0.0, 0.0);
 
@@ -53,6 +54,7 @@ impl Ant {
 
             move_speed: speed,
             wander_direction_sway: wander_sway,
+            marker_radius: marker_radius,
             sense_radius: sense_radius,
             pickup_radius: pickup_radius,
             delta_time: delta,
@@ -64,6 +66,28 @@ impl Ant {
         };
     }
 
+    pub fn render(&self, window: &mut piston_window::PistonWindow, event: &piston_window::Event, color_theme: &Theme) {
+        window.draw_2d(event, |context, graphics, _device| {
+            let ant_size = (5.0, 3.0);
+
+            let transform = piston_window::Transformed::trans(
+                piston_window::Transformed::rot_deg(
+                    piston_window::Transformed::trans(context.transform, self.pos.x, self.pos.y),
+                    self.get_target_dir(),
+                ),
+                -ant_size.0 / 2.0,
+                -ant_size.1 / 2.0,
+            );
+
+            piston_window::rectangle(
+                color_theme.ant_color,
+                [0.0, 0.0, ant_size.0, ant_size.1],
+                transform,
+                graphics,
+            );
+        });
+    }
+
     pub fn update(&mut self) {
         match self.state {
             State::Wander => {
@@ -72,10 +96,7 @@ impl Ant {
             State::Target => {
                 self.target();
             }
-            State::FollowReturn => {
-                println!("a");
-                //self.wander();
-            }
+            State::FollowReturn => {}
             State::FollowExplore => {}
         }
 
@@ -96,10 +117,11 @@ impl Ant {
         self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_pos));
     }
 
-    pub fn drop_marker(&self, m_type: MarkerType, markers: &mut LinkedList<Marker>) {
-        markers.push_back(Marker {
+    pub fn drop_marker(&self, m_type: MarkerType, markers: &mut MarkerMap) {
+        markers.add_marker(Marker {
             pos: self.pos,
             marker_type: m_type,
+            intensity: marker::DEFAULT_MARKER_INTENTSITY,
         });
     }
 
@@ -127,6 +149,10 @@ impl Ant {
 
     pub fn get_pickup_radius(&self) -> f64 {
         return self.pickup_radius;
+    }
+
+    pub fn get_marker_radius(&self) -> f64 {
+        return self.marker_radius;
     }
 
     pub fn is_targeting(&self) -> bool {

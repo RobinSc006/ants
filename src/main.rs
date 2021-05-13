@@ -10,6 +10,8 @@ mod marker;
 mod random;
 mod vector;
 mod world;
+mod colony;
+mod marker_map;
 
 fn main() {
     let mut app = App::init();

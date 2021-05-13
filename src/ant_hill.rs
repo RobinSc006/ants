@@ -1,4 +1,6 @@
-use crate::vector::Vector;
+use piston_window::{Event, PistonWindow, Transformed, ellipse};
+
+use crate::{color::Theme, vector::Vector};
 
 #[allow(dead_code)]
 pub struct AntHill {
@@ -16,6 +18,26 @@ impl AntHill {
 
             food_amount: 0,
         };
+    }
+
+    pub fn render(&self, window: &mut PistonWindow, event: &Event, color_theme: &Theme) {
+        // render ant hill
+        window.draw_2d(event, |context, graphics, _device| {
+            ellipse(
+                color_theme.ant_hill_color,
+                [
+                    self.get_pos().x,
+                    self.get_pos().y,
+                    self.get_radius() * 2.0,
+                    self.get_radius() * 2.0,
+                ],
+                context.transform.trans(
+                    -(self.get_radius() * 2.0) / 2.0,
+                    -(self.get_radius() * 2.0) / 2.0,
+                ),
+                graphics,
+            );
+        });
     }
 
     pub fn add_food(&mut self) {

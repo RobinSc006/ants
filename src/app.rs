@@ -56,6 +56,7 @@ impl App {
             self.config.get_parameter("ant_wander_sway").vals[0],
             self.config.get_parameter("ant_sense_radius").vals[0],
             self.config.get_parameter("ant_pickup_radius").vals[0],
+            self.config.get_parameter("ant_marker_radius").vals[0],
             self.config.get_parameter("debug").vals[0] as u8 != 0,
             self.config.get_parameter("ant_max_markers").vals[0].trunc() as u16,
             color_theme,
