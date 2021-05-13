@@ -1,4 +1,4 @@
-use piston_window::{Event, PistonWindow, Transformed, ellipse};
+use piston_window::{ellipse, Event, PistonWindow, Transformed};
 
 use crate::{color::Theme, vector::Vector};
 

@@ -1,6 +1,14 @@
 use piston_window::{Event, PistonWindow};
 
-use crate::{ant::{Ant, State}, ant_hill::AntHill, color::Theme, food::Food, marker::Marker, marker_map::MarkerMap, vector::Vector};
+use crate::{
+    ant::{Ant, State},
+    ant_hill::AntHill,
+    color::Theme,
+    food::Food,
+    marker::Marker,
+    marker_map::MarkerMap,
+    vector::Vector,
+};
 
 pub struct Colony {
     ants: Vec<Ant>,
@@ -51,7 +59,6 @@ impl Colony {
 
     pub fn update(&mut self, food_on_map: &Vec<Food>, markers_on_map: &mut MarkerMap) {
         for ant in self.ants.iter_mut() {
-
             // Markers
             if ant.should_drop_marker(15) {
                 if ant.is_wandering() || ant.is_targeting() {
@@ -77,8 +84,7 @@ impl Colony {
                     } else {
                         // Check if food is colliding
                         if f64::sqrt(sum_xy) <= ant.get_pickup_radius() {
-                            ant.state = State::FollowReturn;
-                            ant.set_target(self.ant_hill.get_pos());
+                            ant.state = State::FollowExplore;
                         }
                     }
                 }
@@ -86,7 +92,7 @@ impl Colony {
                 // TODO implement carry
             }
 
-            ant.update();
+            ant.update(&markers_on_map);
         }
     }
 

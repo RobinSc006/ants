@@ -66,7 +66,12 @@ impl Ant {
         };
     }
 
-    pub fn render(&self, window: &mut piston_window::PistonWindow, event: &piston_window::Event, color_theme: &Theme) {
+    pub fn render(
+        &self,
+        window: &mut piston_window::PistonWindow,
+        event: &piston_window::Event,
+        color_theme: &Theme,
+    ) {
         window.draw_2d(event, |context, graphics, _device| {
             let ant_size = (5.0, 3.0);
 
@@ -88,7 +93,9 @@ impl Ant {
         });
     }
 
-    pub fn update(&mut self) {
+    pub fn update(&mut self, markers: &MarkerMap) {
+        let nearby_markers = markers.get_markers_in_zone(self.pos, self.get_marker_radius());
+
         match self.state {
             State::Wander => {
                 self.wander();
@@ -96,8 +103,12 @@ impl Ant {
             State::Target => {
                 self.target();
             }
-            State::FollowReturn => {}
-            State::FollowExplore => {}
+            State::FollowReturn => {
+                self.follow_markers(MarkerType::Return, &nearby_markers);
+            }
+            State::FollowExplore => {
+                self.follow_markers(MarkerType::Explore, &nearby_markers);
+            }
         }
 
         self.ticks_since_marker += 1;
@@ -115,6 +126,23 @@ impl Ant {
 
     fn target(&mut self) {
         self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_pos));
+    }
+
+    fn follow_markers(&mut self, marker_type: MarkerType, markers: &Vec<Marker>) {
+        let mut most_intense_marker: Marker = Marker {
+            pos: Vector::new(0.0, 0.0),
+            marker_type: MarkerType::Return,
+            intensity: 0.0,
+        };
+
+        for marker in markers {
+            if marker.marker_type == marker_type && marker.intensity > most_intense_marker.intensity
+            {
+                most_intense_marker = *marker;
+            }
+        }
+
+        self.vel = Vector::from_angle(self.pos.angle_to(most_intense_marker.pos));
     }
 
     pub fn drop_marker(&self, m_type: MarkerType, markers: &mut MarkerMap) {

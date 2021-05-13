@@ -1,11 +1,12 @@
+use std::cmp::Ordering;
+
 use image::{Rgba, RgbaImage};
 
 use crate::vector::Vector;
 
 pub const DEFAULT_MARKER_INTENTSITY: f64 = 25.0;
 
-#[derive(Debug, Copy, Clone)]
-#[derive(PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MarkerType {
     Explore,
     Return,

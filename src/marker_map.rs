@@ -1,7 +1,7 @@
-use image::{ImageBuffer, Rgba, RgbaImage};
+use image::{Rgba, RgbaImage};
 
 use crate::{
-    marker::{self, Marker, MarkerType},
+    marker::{Marker, MarkerType},
     vector::Vector,
 };
 
@@ -35,7 +35,7 @@ impl MarkerMap {
     pub fn add_marker(&mut self, marker: Marker) {
         self.markers.push(marker);
     }
-    pub fn get_markers(&self) -> &Vec<Marker> {
+    pub fn _get_markers(&self) -> &Vec<Marker> {
         return &self.markers;
     }
 

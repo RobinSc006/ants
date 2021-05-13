@@ -1,9 +1,14 @@
 use image::{ImageBuffer, RgbaImage};
-use piston_window::{
-    rectangle, Event, G2dTexture, PistonWindow, Texture, TextureSettings,
-};
+use piston_window::{rectangle, Event, G2dTexture, PistonWindow, Texture, TextureSettings};
 
-use crate::{colony::{Colony}, color::{self}, food::Food, marker_map::MarkerMap, random, vector::Vector};
+use crate::{
+    colony::Colony,
+    color::{self},
+    food::Food,
+    marker_map::MarkerMap,
+    random,
+    vector::Vector,
+};
 
 pub struct World {
     colony: Colony,
@@ -37,7 +42,16 @@ impl World {
         window_dimensions: (u32, u32),
     ) -> Self {
         let mut world = World {
-            colony: Colony::new(num_ants, ant_pos, speed, wander_sway, sense_radius, pickup_radius, marker_radius, delta),
+            colony: Colony::new(
+                num_ants,
+                ant_pos,
+                speed,
+                wander_sway,
+                sense_radius,
+                pickup_radius,
+                marker_radius,
+                delta,
+            ),
             food_on_map: Vec::new(),
             marker_map: MarkerMap::new(),
 
@@ -91,7 +105,7 @@ impl World {
     pub fn update(&mut self) {
         self.marker_map.update();
         self.marker_map.generate_image(&mut self.marker_map_image);
-        
+
         self.colony.update(&self.food_on_map, &mut self.marker_map);
     }
 
