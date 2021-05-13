@@ -86,11 +86,12 @@ impl World {
 
         // render ants
         self.colony.render(window, event, &self.color_theme);
-        
     }
 
     pub fn update(&mut self) {
+        self.marker_map.update();
         self.marker_map.generate_image(&mut self.marker_map_image);
+        
         self.colony.update(&self.food_on_map, &mut self.marker_map);
     }
 
