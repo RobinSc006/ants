@@ -1,4 +1,4 @@
-use crate::{color::Theme, marker, marker_map::MarkerMap, vector::Vector};
+use crate::{color::Theme, marker_map::MarkerMap, vector::Vector};
 use crate::{
     marker::{Marker, MarkerType},
     random,
@@ -27,6 +27,7 @@ pub struct Ant {
     /// Not as in traditional delta. I just borrow the term for 'time step'
     delta_time: f64,
     ticks_since_marker: u32,
+    marker_drop_rate: u8,
 
     desired_wander_dir: Vector,
     targeted_pos: Vector,
@@ -41,6 +42,7 @@ impl Ant {
         sense_radius: f64,
         pickup_radius: f64,
         marker_radius: f64,
+        marker_drop_rate: u8,
     ) -> Self {
         let mut spawn_pos = Vector::new(0.0, 0.0);
 
@@ -58,6 +60,7 @@ impl Ant {
             sense_radius: sense_radius,
             pickup_radius: pickup_radius,
             delta_time: delta,
+            marker_drop_rate: marker_drop_rate,
 
             ticks_since_marker: 0,
 
@@ -94,7 +97,7 @@ impl Ant {
     }
 
     pub fn update(&mut self, markers: &MarkerMap) {
-        let nearby_markers = markers.get_markers_in_zone(self.pos, self.get_marker_radius());
+        let nearby_markers = markers.get_markers_in_zone(&self);
 
         match self.state {
             State::Wander => {
@@ -128,38 +131,35 @@ impl Ant {
         self.vel = Vector::from_angle(self.pos.angle_to(self.targeted_pos));
     }
 
-    fn follow_markers(&mut self, marker_type: MarkerType, markers: &Vec<Marker>) {
-        let mut most_intense_marker: Marker = Marker {
+    fn follow_markers(&mut self, _marker_type: MarkerType, markers: &Vec<Marker>) {
+        let mut least_intense_marker: Marker = Marker {
             pos: Vector::new(0.0, 0.0),
             marker_type: MarkerType::Return,
-            intensity: 0.0,
+            intensity: 100.0,
         };
 
-        for marker in markers {
-            if marker.marker_type == marker_type && marker.intensity > most_intense_marker.intensity
-            {
-                most_intense_marker = *marker;
+        for marker in markers.iter() {
+            match marker.marker_type {
+                _marker_type => {
+                    if marker.intensity < least_intense_marker.intensity {
+                        least_intense_marker = *marker;
+                    }
+                }
             }
         }
 
-        self.vel = Vector::from_angle(self.pos.angle_to(most_intense_marker.pos));
+        self.vel = Vector::from_angle(self.pos.angle_to(least_intense_marker.pos));
     }
 
-    pub fn drop_marker(&self, m_type: MarkerType, markers: &mut MarkerMap) {
-        markers.add_marker(Marker {
-            pos: self.pos,
-            marker_type: m_type,
-            intensity: marker::DEFAULT_MARKER_INTENTSITY,
-        });
+    pub fn drop_marker(&mut self, m_type: MarkerType, markers: &mut MarkerMap) {
+        if !self.should_drop_marker() {
+            return;
+        }
+        markers.add_marker(m_type, self.pos);
     }
 
     fn update_pos(&mut self) {
         self.pos = self.pos + self.vel.multiply_float(self.delta_time);
-    }
-
-    pub fn collect_food(&mut self) {
-        self.targeted_pos = Vector::new(0.0, 0.0);
-        self.state = State::FollowReturn;
     }
 
     pub fn set_target(&mut self, target: Vector) {
@@ -184,19 +184,58 @@ impl Ant {
     }
 
     pub fn is_targeting(&self) -> bool {
-        return self.state == State::Target;
+        match self.state {
+            State::Wander => {
+                return false;
+            }
+            State::Target => {
+                return true;
+            }
+            State::FollowReturn => {
+                return false;
+            }
+            State::FollowExplore => {
+                return false;
+            }
+        }
     }
 
     pub fn is_carrying(&self) -> bool {
-        return self.state == State::FollowReturn;
+        match self.state {
+            State::Wander => {
+                return false;
+            }
+            State::Target => {
+                return false;
+            }
+            State::FollowReturn => {
+                return false;
+            }
+            State::FollowExplore => {
+                return true;
+            }
+        }
     }
 
     pub fn is_wandering(&self) -> bool {
-        return self.state == State::Wander;
+        match self.state {
+            State::Wander => {
+                return true;
+            }
+            State::Target => {
+                return false;
+            }
+            State::FollowReturn => {
+                return false;
+            }
+            State::FollowExplore => {
+                return false;
+            }
+        }
     }
 
-    pub fn should_drop_marker(&mut self, marker_ticks: u32) -> bool {
-        if self.ticks_since_marker >= marker_ticks {
+    pub fn should_drop_marker(&mut self) -> bool {
+        if self.ticks_since_marker >= self.marker_drop_rate.into() {
             self.ticks_since_marker = 0;
             return true;
         }

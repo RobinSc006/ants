@@ -1,6 +1,7 @@
 use image::{Rgba, RgbaImage};
 
 use crate::{
+    ant::Ant,
     marker::{Marker, MarkerType},
     vector::Vector,
 };
@@ -8,13 +9,15 @@ use crate::{
 pub struct MarkerMap {
     markers: Vec<Marker>,
     marker_degradation_rate: f64,
+    default_intensity: f64,
 }
 
 impl MarkerMap {
-    pub fn new() -> Self {
+    pub fn new(default_intensity: f64, degradation_rate: f64) -> Self {
         return Self {
             markers: Vec::new(),
-            marker_degradation_rate: 0.1,
+            marker_degradation_rate: degradation_rate,
+            default_intensity: default_intensity,
         };
     }
     pub fn update(&mut self) {
@@ -32,22 +35,27 @@ impl MarkerMap {
         }
     }
 
-    pub fn add_marker(&mut self, marker: Marker) {
-        self.markers.push(marker);
+    pub fn add_marker(&mut self, m_type: MarkerType, pos: Vector) {
+        self.markers.push(Marker {
+            pos: pos,
+            marker_type: m_type,
+            intensity: self.default_intensity,
+        });
     }
     pub fn _get_markers(&self) -> &Vec<Marker> {
         return &self.markers;
     }
 
-    pub fn get_markers_in_zone(&self, pos: Vector, area: f64) -> Vec<Marker> {
+    pub fn get_markers_in_zone(&self, ant: &Ant) -> Vec<Marker> {
         let mut markers: Vec<Marker> = Vec::new();
 
         for marker in self.markers.iter() {
-            if marker.pos.x >= pos.x &&         // right of the left edge AND
-                marker.pos.x <= pos.x + area &&    // left of the right edge AND
-                marker.pos.y >= pos.y &&         // below the top AND
-                marker.pos.y <= pos.y + area
-            {
+            let dist_x = ant.pos.x - marker.pos.x;
+            let dist_y = ant.pos.y - marker.pos.y;
+
+            let sum_xy = dist_x * dist_x + dist_y * dist_y;
+
+            if f64::sqrt(sum_xy) <= ant.get_marker_radius() {
                 markers.push(marker.clone()); // above the bottom
             }
         }

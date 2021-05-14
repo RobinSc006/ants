@@ -33,6 +33,11 @@ impl World {
         sense_radius: f64,
         pickup_radius: f64,
         marker_radius: f64,
+        marker_max_intensity: f64,
+        marker_degrade_rate: f64,
+
+        // Determines number of ticks until marker drop
+        marker_drop_rate: u8,
 
         debug_gismo: bool,
         max_markers: u16,
@@ -51,9 +56,10 @@ impl World {
                 pickup_radius,
                 marker_radius,
                 delta,
+                marker_drop_rate,
             ),
             food_on_map: Vec::new(),
-            marker_map: MarkerMap::new(),
+            marker_map: MarkerMap::new(marker_max_intensity, marker_degrade_rate),
 
             marker_map_image: ImageBuffer::new(window_dimensions.0, window_dimensions.1),
 

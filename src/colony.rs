@@ -5,7 +5,6 @@ use crate::{
     ant_hill::AntHill,
     color::Theme,
     food::Food,
-    marker::Marker,
     marker_map::MarkerMap,
     vector::Vector,
 };
@@ -29,6 +28,7 @@ impl Colony {
         pickup_radius: f64,
         marker_radius: f64,
         delta: f64,
+        marker_drop_rate: u8,
     ) -> Self {
         let mut colony = Self {
             ants: Vec::new(),
@@ -44,6 +44,7 @@ impl Colony {
             sense_radius,
             pickup_radius,
             marker_radius,
+            marker_drop_rate,
         );
 
         return colony;
@@ -60,12 +61,10 @@ impl Colony {
     pub fn update(&mut self, food_on_map: &Vec<Food>, markers_on_map: &mut MarkerMap) {
         for ant in self.ants.iter_mut() {
             // Markers
-            if ant.should_drop_marker(15) {
-                if ant.is_wandering() || ant.is_targeting() {
-                    ant.drop_marker(crate::marker::MarkerType::Explore, markers_on_map);
-                } else if ant.is_carrying() {
-                    ant.drop_marker(crate::marker::MarkerType::Return, markers_on_map);
-                }
+            if ant.is_wandering() || ant.is_targeting() {
+                ant.drop_marker(crate::marker::MarkerType::Explore, markers_on_map);
+            } else if ant.is_carrying() {
+                ant.drop_marker(crate::marker::MarkerType::Return, markers_on_map);
             }
 
             // Collision
@@ -80,6 +79,7 @@ impl Colony {
                         // Check if food is visible
                         if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
                             ant.set_target(food.pos);
+                            ant.state = State::Target;
                         }
                     } else {
                         // Check if food is colliding
@@ -89,7 +89,6 @@ impl Colony {
                     }
                 }
             } else {
-                // TODO implement carry
             }
 
             ant.update(&markers_on_map);
@@ -103,6 +102,7 @@ impl Colony {
         sense_radius: f64,
         pickup_radius: f64,
         marker_radius: f64,
+        marker_drop_rate: u8,
     ) {
         let spawn_area = (
             self.ant_hill.get_pos(),
@@ -122,6 +122,7 @@ impl Colony {
                 sense_radius,
                 pickup_radius,
                 marker_radius,
+                marker_drop_rate,
             ));
         }
     }
