@@ -61,21 +61,24 @@ impl Colony {
     pub fn update(&mut self, food_on_map: &Vec<Food>, markers_on_map: &mut MarkerMap) {
         for ant in self.ants.iter_mut() {
             // Markers
-            if ant.is_wandering() || ant.is_targeting() {
+            if ant.state_cmp(State::Wander)
+                || ant.state_cmp(State::Target)
+                || ant.state_cmp(State::FollowReturn)
+            {
                 ant.drop_marker(crate::marker::MarkerType::Explore, markers_on_map);
-            } else if ant.is_carrying() {
+            } else if ant.state_cmp(State::FollowExplore) || ant.state_cmp(State::Home) {
                 ant.drop_marker(crate::marker::MarkerType::Return, markers_on_map);
             }
 
             // Collision
-            if !ant.is_carrying() {
+            if !ant.state_cmp(State::FollowExplore) {
                 for (_index, food) in food_on_map.clone().iter().enumerate() {
                     let dist_x = ant.pos.x - food.pos.x;
                     let dist_y = ant.pos.y - food.pos.y;
 
                     let sum_xy = dist_x * dist_x + dist_y * dist_y;
 
-                    if !ant.is_targeting() {
+                    if !ant.state_cmp(State::Target) {
                         // Check if food is visible
                         if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
                             ant.set_target(food.pos);
@@ -88,7 +91,24 @@ impl Colony {
                         }
                     }
                 }
-            } else {
+            }
+            if ant.state_cmp(State::FollowExplore) || ant.state_cmp(State::Home) {
+                // Get distance between ant hill and ant
+                let dist_x = ant.pos.x - self.ant_hill.get_pos().x;
+                let dist_y = ant.pos.y - self.ant_hill.get_pos().y;
+
+                let sum_xy = dist_x * dist_x + dist_y * dist_y;
+
+                // Check if ant senses ant hill
+                if f64::sqrt(sum_xy) <= ant.get_pickup_radius() + self.ant_hill.get_radius() {
+                    self.ant_hill.add_food();
+                    ant.state = State::FollowReturn;
+
+                    println!("food collected: {}", self.ant_hill.get_food_amount());
+                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() {
+                    ant.set_target(self.ant_hill.get_pos());
+                    ant.state = State::Home;
+                }
             }
 
             ant.update(&markers_on_map);

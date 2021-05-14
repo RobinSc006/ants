@@ -2,6 +2,7 @@ use image::{Rgba, RgbaImage};
 
 use crate::{
     ant::Ant,
+    color,
     marker::{Marker, MarkerType},
     vector::Vector,
 };
@@ -65,6 +66,7 @@ impl MarkerMap {
 
     pub fn generate_image(&mut self, image: &mut RgbaImage) {
         image.fill(1);
+        let mut brightness: u8;
 
         for marker in self.markers.iter() {
             if marker.pos.x <= image.width().into()
@@ -72,19 +74,22 @@ impl MarkerMap {
                 && marker.pos.y <= image.height().into()
                 && marker.pos.y >= 0.0
             {
+                brightness =
+                    color::map(marker.intensity, 0.0, self.default_intensity, 0.0, 255.0) as u8;
+
                 match marker.marker_type {
                     MarkerType::Explore => {
                         image.put_pixel(
                             marker.pos.x as u32,
                             marker.pos.y as u32,
-                            Rgba([255, 0, 0, 255]),
+                            Rgba([255, 0, 0, brightness]),
                         );
                     }
                     MarkerType::Return => {
                         image.put_pixel(
                             marker.pos.x as u32,
                             marker.pos.y as u32,
-                            Rgba([0, 0, 255, 255]),
+                            Rgba([0, 0, 255, brightness]),
                         );
                     }
                 }

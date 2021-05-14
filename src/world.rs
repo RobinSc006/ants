@@ -40,7 +40,6 @@ impl World {
         marker_drop_rate: u8,
 
         debug_gismo: bool,
-        max_markers: u16,
         theme: color::Theme,
         delta: f64,
 
@@ -110,7 +109,9 @@ impl World {
 
     pub fn update(&mut self) {
         self.marker_map.update();
-        self.marker_map.generate_image(&mut self.marker_map_image);
+        if self.render_debug_gismo {
+            self.marker_map.generate_image(&mut self.marker_map_image);
+        }
 
         self.colony.update(&self.food_on_map, &mut self.marker_map);
     }

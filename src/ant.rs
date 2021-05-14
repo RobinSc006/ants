@@ -4,10 +4,11 @@ use crate::{
     random,
 };
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Wander,
     Target,
+    Home,
     FollowReturn,
     FollowExplore,
 }
@@ -112,6 +113,9 @@ impl Ant {
             State::FollowExplore => {
                 self.follow_markers(MarkerType::Explore, &nearby_markers);
             }
+            State::Home => {
+                self.target();
+            }
         }
 
         self.ticks_since_marker += 1;
@@ -132,6 +136,7 @@ impl Ant {
     }
 
     fn follow_markers(&mut self, _marker_type: MarkerType, markers: &Vec<Marker>) {
+        let mut fallback_to_wander = true;
         let mut least_intense_marker: Marker = Marker {
             pos: Vector::new(0.0, 0.0),
             marker_type: MarkerType::Return,
@@ -139,15 +144,18 @@ impl Ant {
         };
 
         for marker in markers.iter() {
-            match marker.marker_type {
-                _marker_type => {
-                    if marker.intensity < least_intense_marker.intensity {
-                        least_intense_marker = *marker;
-                    }
+            if marker.compare(_marker_type) {
+                if marker.intensity < least_intense_marker.intensity {
+                    least_intense_marker = *marker;
+                    fallback_to_wander = false;
                 }
             }
         }
 
+        if fallback_to_wander {
+            self.state = State::Wander;
+            return;
+        }
         self.vel = Vector::from_angle(self.pos.angle_to(least_intense_marker.pos));
     }
 
@@ -183,55 +191,9 @@ impl Ant {
         return self.marker_radius;
     }
 
-    pub fn is_targeting(&self) -> bool {
-        match self.state {
-            State::Wander => {
-                return false;
-            }
-            State::Target => {
-                return true;
-            }
-            State::FollowReturn => {
-                return false;
-            }
-            State::FollowExplore => {
-                return false;
-            }
-        }
-    }
-
-    pub fn is_carrying(&self) -> bool {
-        match self.state {
-            State::Wander => {
-                return false;
-            }
-            State::Target => {
-                return false;
-            }
-            State::FollowReturn => {
-                return false;
-            }
-            State::FollowExplore => {
-                return true;
-            }
-        }
-    }
-
-    pub fn is_wandering(&self) -> bool {
-        match self.state {
-            State::Wander => {
-                return true;
-            }
-            State::Target => {
-                return false;
-            }
-            State::FollowReturn => {
-                return false;
-            }
-            State::FollowExplore => {
-                return false;
-            }
-        }
+    /// The only way to compare Enums apparently
+    pub fn state_cmp(&self, other: State) -> bool {
+        return &format!("{:?}", other) == &format!("{:?}", self.state);
     }
 
     pub fn should_drop_marker(&mut self) -> bool {
