@@ -32,7 +32,7 @@ impl Colony {
     ) -> Self {
         let mut colony = Self {
             ants: Vec::new(),
-            ant_hill: AntHill::new(Vector::new(ant_pos.0, ant_pos.1), 15.0),
+            ant_hill: AntHill::new(Vector::new(ant_pos.0, ant_pos.1), 25.0),
             num_ants: num_ants,
 
             delta_time: delta,
@@ -105,7 +105,7 @@ impl Colony {
                     ant.state = State::FollowReturn;
 
                     println!("food collected: {}", self.ant_hill.get_food_amount());
-                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() {
+                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() + ant.get_sense_radius(){
                     ant.set_target(self.ant_hill.get_pos());
                     ant.state = State::Home;
                 }

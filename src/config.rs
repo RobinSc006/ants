@@ -16,7 +16,7 @@ impl Config {
     pub fn load(filename: &str) -> Self {
         let mut conf = Config {
             content: fs::read_to_string(Config::get_conf_path().join(filename))
-                .expect("something went wrong reading the file"),
+                .expect("unable to read config file"),
             parameters: HashMap::new(),
         };
 

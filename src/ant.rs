@@ -153,7 +153,7 @@ impl Ant {
         }
 
         if fallback_to_wander {
-            self.state = State::Wander;
+            self.wander();
             return;
         }
         self.vel = Vector::from_angle(self.pos.angle_to(least_intense_marker.pos));
@@ -167,7 +167,7 @@ impl Ant {
     }
 
     fn update_pos(&mut self) {
-        self.pos = self.pos + self.vel.multiply_float(self.delta_time);
+        self.pos = self.pos + self.vel.normalize().multiply_float(self.delta_time);
     }
 
     pub fn set_target(&mut self, target: Vector) {
@@ -191,7 +191,10 @@ impl Ant {
         return self.marker_radius;
     }
 
-    /// The only way to compare Enums apparently
+    // Listen...
+    // I know what this looks like, but rust has given me no choice
+    // it might also just be my own incompetence, but that's besides 
+    // the point.. PartialEq, Eq and matches! don't seem to work, so...
     pub fn state_cmp(&self, other: State) -> bool {
         return &format!("{:?}", other) == &format!("{:?}", self.state);
     }
