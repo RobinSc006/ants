@@ -11,3 +11,8 @@ piston_window = "*"
 image = "*"
 find_folder = "*"
 rand = "*"
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
