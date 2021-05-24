@@ -64,6 +64,10 @@ impl MarkerMap {
         return markers;
     }
 
+    pub fn get_num_markers(&self) -> u64 {
+        return self.markers.len() as u64;
+    }
+
     pub fn generate_image(&mut self, image: &mut RgbaImage) {
         image.fill(1);
         let mut brightness: u8;

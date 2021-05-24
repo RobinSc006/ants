@@ -193,7 +193,7 @@ impl Ant {
 
     // Listen...
     // I know what this looks like, but rust has given me no choice
-    // it might also just be my own incompetence, but that's besides 
+    // it might also just be my own incompetence, but that's besides
     // the point.. PartialEq, Eq and matches! don't seem to work, so...
     pub fn state_cmp(&self, other: State) -> bool {
         return &format!("{:?}", other) == &format!("{:?}", self.state);

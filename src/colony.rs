@@ -103,9 +103,7 @@ impl Colony {
                 if f64::sqrt(sum_xy) <= ant.get_pickup_radius() + self.ant_hill.get_radius() {
                     self.ant_hill.add_food();
                     ant.state = State::FollowReturn;
-
-                    println!("food collected: {}", self.ant_hill.get_food_amount());
-                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() + ant.get_sense_radius(){
+                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() + ant.get_sense_radius() {
                     ant.set_target(self.ant_hill.get_pos());
                     ant.state = State::Home;
                 }
@@ -113,6 +111,14 @@ impl Colony {
 
             ant.update(&markers_on_map);
         }
+    }
+
+    pub fn get_num_ants(&self) -> u16 {
+        return self.ants.len() as u16;
+    }
+
+    pub fn get_num_collected_food(&self) -> u32 {
+        return self.ant_hill.get_food_amount() as u32;
     }
 
     fn populate(

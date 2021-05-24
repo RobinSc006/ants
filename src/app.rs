@@ -1,4 +1,4 @@
-use crate::config::Config;
+use crate::{config::Config, world::WorldStats};
 
 extern crate piston_window;
 
@@ -40,9 +40,21 @@ impl App {
         let mut texture_context = window.create_texture_context();
         let texture_settings = TextureSettings::new();
 
+        // Font loading
+        let assets = find_folder::Search::ParentsThenKids(3, 3)
+            .for_folder("assets")
+            .unwrap();
+        let mut glyphs = window
+            .load_font(assets.join("font/PTSans-Regular.ttf"))
+            .unwrap();
+
+        glyphs.preload_printable_ascii(15).unwrap();
+
         // Tick system setup
         let tick_time: u128 = self.config.get_parameter("tick_time").vals[0] as u128;
         let mut tick_clock = Instant::now();
+
+        let mut simulation_paused = false;
 
         // World creation
         let mut world: World = World::new(
@@ -66,11 +78,28 @@ impl App {
             window_dimensions,
         );
 
+        let mut world_stats: WorldStats = WorldStats::empty();
+
         // Event loop
         while let Some(event) = window.next() {
+            // Input
+            if let Some(button) = event.release_args() {
+                match button {
+                    Button::Keyboard(key) => {
+                        if key == Key::Space {
+                            simulation_paused = !simulation_paused;
+                        }
+                    }
+                    Button::Mouse(_) => {}
+                    Button::Controller(_) => {}
+                    Button::Hat(_) => {}
+                }
+            }
+
             // Tick update
-            if tick_clock.elapsed().as_millis() >= tick_time {
+            if !simulation_paused && tick_clock.elapsed().as_millis() >= tick_time {
                 world.update();
+                world_stats = world.get_stats();
 
                 tick_clock = Instant::now();
             }
@@ -82,6 +111,59 @@ impl App {
 
             // Render ants
             world.render(&mut window, &event, &mut texture_context, &texture_settings);
+
+            // Render text
+            window.draw_2d(&event, |context, graphics, _device| {
+                glyphs.factory.encoder.flush(_device);
+
+                // ? Num ants
+                text::Text::new_color(color_theme.font_color, 15)
+                    .draw(
+                        &format!("Ants: {}", world_stats.num_ants),
+                        &mut glyphs,
+                        &context.draw_state,
+                        context.transform.trans(3.0, 15.0),
+                        graphics,
+                    )
+                    .unwrap();
+
+                // ? Num markers
+                text::Text::new_color(color_theme.font_color, 15)
+                    .draw(
+                        &format!("Markers: {}", world_stats.num_pheromones),
+                        &mut glyphs,
+                        &context.draw_state,
+                        context.transform.trans(3.0, 30.0),
+                        graphics,
+                    )
+                    .unwrap();
+
+                // ? Num food collected
+                text::Text::new_color(color_theme.font_color, 15)
+                    .draw(
+                        &format!("Food collected: {}", world_stats.num_food_collected),
+                        &mut glyphs,
+                        &context.draw_state,
+                        context.transform.trans(3.0, 45.0),
+                        graphics,
+                    )
+                    .unwrap();
+
+                if simulation_paused {
+                    // ? Is paused
+                    text::Text::new_color(color::get_color_rgba((255, 20, 20, 255)), 16)
+                        .draw(
+                            "Paused",
+                            &mut glyphs,
+                            &context.draw_state,
+                            context
+                                .transform
+                                .trans((window_dimensions.0 / 2) as f64 - 30.0, 20.0),
+                            graphics,
+                        )
+                        .unwrap();
+                }
+            });
         }
     }
 }

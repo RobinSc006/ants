@@ -10,6 +10,22 @@ use crate::{
     vector::Vector,
 };
 
+pub struct WorldStats {
+    pub num_ants: u16,
+    pub num_pheromones: u64,
+    pub num_food_collected: u32,
+}
+
+impl WorldStats {
+    pub fn empty() -> Self {
+        return Self {
+            num_ants: 0,
+            num_pheromones: 0,
+            num_food_collected: 0,
+        };
+    }
+}
+
 pub struct World {
     colony: Colony,
 
@@ -114,6 +130,14 @@ impl World {
         }
 
         self.colony.update(&self.food_on_map, &mut self.marker_map);
+    }
+
+    pub fn get_stats(&self) -> WorldStats {
+        return WorldStats {
+            num_ants: self.colony.get_num_ants(),
+            num_pheromones: self.marker_map.get_num_markers(),
+            num_food_collected: self.colony.get_num_collected_food(),
+        };
     }
 
     fn cluster_food(&mut self, amount: u16, constraits: (Vector, Vector)) {
