@@ -35,25 +35,25 @@ pub struct Ant {
 impl Ant {
     pub fn new(pos: DVec2) -> Self {
         let mut random_gen = rand::thread_rng();
-        let random_marker_rate = Uniform::from(2..10);
+        let random_marker_rate = Uniform::from(0..5);
 
         Self {
             pos: pos,
 
             state: 0,
 
-            act_perception_radius: 50.0,
+            act_perception_radius: 55.0,
             perception_radius: 10,
-            pheromone_radius: 11,
+            pheromone_radius: 10,
 
-            size: 5.5,
+            size: 5.0,
             speed: 3.5,
-            wander_direction_sway: 0.25,
+            wander_direction_sway: 0.3,
 
             ticks_since_marker: 0,
 
             marker_drop_rate: random_marker_rate.sample(&mut random_gen),
-            marker_drop_strength: 0.666,
+            marker_drop_strength: 2.666,
 
             current_target_tile: (0, 0),
             wander_target_dir: DVec2::default(),
@@ -81,6 +81,7 @@ impl Ant {
                 if !self.follow_marker(2, world_tiles, grid_size, win_dim) {
                     self.state = STATE_WANDER;
                 }
+                self.drop_marker(1, world_tiles, grid_size, win_dim);
             }
             STATE_SEARCH_BACK => {
                 self.follow_marker(1, world_tiles, grid_size, win_dim);

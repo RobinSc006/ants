@@ -1,5 +1,7 @@
 use crate::config::Config;
+use crate::util::map_pos_to_grid;
 use crate::world::World;
+use glam::DVec2;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
@@ -33,7 +35,14 @@ impl App {
         );
 
         // * World setup
-        let mut world = World::new(500, (100, 100), &mut window_dimensions, 10.0, Color::BLACK);
+        let world_grid_size = (100, 100);
+        let mut world = World::new(
+            5000,
+            world_grid_size,
+            &mut window_dimensions,
+            10.0,
+            Color::BLACK,
+        );
 
         // ! Graphics setup --
 
@@ -84,6 +93,16 @@ impl App {
                         keycode: Some(Keycode::Escape),
                         ..
                     } => break 'running,
+                    Event::MouseButtonDown { x, y, .. } => {
+                        world.insert_food(
+                            map_pos_to_grid(
+                                DVec2::new(x as f64, y as f64),
+                                world_grid_size,
+                                window_dimensions,
+                            ),
+                            255,
+                        );
+                    }
                     _ => {}
                 }
             }

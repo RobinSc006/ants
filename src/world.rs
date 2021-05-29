@@ -95,4 +95,15 @@ impl World {
             })
         })
     }
+
+    pub fn insert_food(&mut self, grid_pos: (u32, u32), amount: u32) {
+        let empty_marker = Marker::new(0);
+
+        self.grid[grid_pos.0 as usize][grid_pos.1 as usize] = Tile {
+            markers: (empty_marker, empty_marker),
+            food: Food {
+                concentration: amount,
+            },
+        };
+    }
 }
