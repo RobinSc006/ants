@@ -14,9 +14,20 @@ pub struct Config {
 
 impl Config {
     pub fn load(filename: &str) -> Self {
+        let mut content: String = String::new();
+        let config_file = fs::read_to_string(Config::get_conf_path().join(filename));
+
+        match config_file {
+            Ok(_) => {
+                content = config_file.unwrap();
+            }
+            Err(_) => {
+                log::error!("config file not found");
+            }
+        }
+
         let mut conf = Config {
-            content: fs::read_to_string(Config::get_conf_path().join(filename))
-                .expect("unable to read config file"),
+            content: content,
             parameters: HashMap::new(),
         };
 
@@ -40,7 +51,19 @@ impl Config {
                     .split(",")
                     .collect::<Vec<&str>>()
                 {
-                    param_values.push(param_val_txt.parse().unwrap());
+                    let mut param = 0.0;
+                    let parsed_param = param_val_txt.parse::<f64>();
+
+                    match parsed_param {
+                        Ok(_) => {
+                            param = parsed_param.unwrap();
+                        }
+                        Err(_) => {
+                            log::error!("failed to parse '{}' as config parameter", &line);
+                        }
+                    }
+
+                    param_values.push(param);
                 }
 
                 self.parameters.insert(
@@ -55,7 +78,12 @@ impl Config {
     }
 
     pub fn get_parameter(&self, name: &str) -> ConfigParameter {
-        return self.parameters[name].clone();
+        if self.parameters.contains_key(name) {
+            return self.parameters[name].clone();
+        } else {
+            log::error!("parameter '{}' not found in config file", name);
+            std::process::exit(-1);
+        }
     }
 
     pub fn get_conf_path() -> PathBuf {
