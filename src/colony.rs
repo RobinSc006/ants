@@ -56,9 +56,10 @@ impl Colony {
         win_dim: (u32, u32),
         grid_size: (u32, u32),
         world_tiles: &mut Vec<Vec<Tile>>,
+        food_coords: &mut Vec<(u32, u32)>,
     ) {
         for ant in self.ants.iter_mut() {
-            ant.update(win_dim, grid_size, world_tiles, &self.ant_hill);
+            ant.update(win_dim, grid_size, world_tiles, &self.ant_hill, food_coords);
         }
     }
 

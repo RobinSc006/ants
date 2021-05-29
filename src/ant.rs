@@ -2,7 +2,12 @@ use glam::DVec2;
 use rand::{distributions::Uniform, prelude::Distribution};
 use sdl2::rect::Rect;
 
-use crate::{ant_hill::AntHill, marker::Marker, tile::Tile, util::map};
+use crate::{
+    ant_hill::AntHill,
+    marker::Marker,
+    tile::Tile,
+    util::{map, map_pos_to_grid},
+};
 
 const STATE_WANDER: u8 = 0;
 const STATE_TARGET_FOOD: u8 = 1;
@@ -35,25 +40,32 @@ pub struct Ant {
 impl Ant {
     pub fn new(pos: DVec2) -> Self {
         let mut random_gen = rand::thread_rng();
-        let random_marker_rate = Uniform::from(0..5);
+
+        let random_marker_rate = Uniform::from(0..2);
+        let random_speed_size = Uniform::from(300000000..600000000);
+        let random_marker_perception_radius = Uniform::from(5..15);
+        let random_act_perception_radius = Uniform::from(25..65);
+        let random_wander_sway = Uniform::from(100000000..500000000);
+        let random_marker_strength = Uniform::from(300000000..500000000);
 
         Self {
             pos: pos,
 
             state: 0,
 
-            act_perception_radius: 55.0,
-            perception_radius: 10,
-            pheromone_radius: 10,
+            act_perception_radius: random_act_perception_radius.sample(&mut random_gen) as f64,
+            perception_radius: random_marker_perception_radius.sample(&mut random_gen),
+            pheromone_radius: random_marker_perception_radius.sample(&mut random_gen),
 
-            size: 5.0,
-            speed: 3.5,
-            wander_direction_sway: 0.3,
+            size: random_speed_size.sample(&mut random_gen) as f64 * 0.00000001,
+            speed: random_speed_size.sample(&mut random_gen) as f64 * 0.00000001,
+            wander_direction_sway: random_wander_sway.sample(&mut random_gen) as f64 * 0.000000001,
 
             ticks_since_marker: 0,
 
             marker_drop_rate: random_marker_rate.sample(&mut random_gen),
-            marker_drop_strength: 2.666,
+            marker_drop_strength: random_marker_strength.sample(&mut random_gen) as f64
+                * 0.000000001,
 
             current_target_tile: (0, 0),
             wander_target_dir: DVec2::default(),
@@ -66,25 +78,41 @@ impl Ant {
         grid_size: (u32, u32),
         world_tiles: &mut Vec<Vec<Tile>>,
         ant_hill: &AntHill,
+        food_coords: &mut Vec<(u32, u32)>,
     ) {
         // TODO implement logic
         match self.state {
             STATE_TARGET_FOOD => {
-                self.approach_food(grid_size, win_dim);
-                //self.drop_explore_marker(world_tiles, grid_size, win_dim);
+                self.approach_food(grid_size, win_dim, world_tiles, food_coords);
+                self.drop_marker(1, world_tiles, grid_size, win_dim);
             }
             STATE_TARGET_HOME => {
                 self.approach_home(grid_size, win_dim, ant_hill);
                 self.drop_marker(2, world_tiles, grid_size, win_dim);
             }
             STATE_SEARCH_EXPLORE => {
-                if !self.follow_marker(2, world_tiles, grid_size, win_dim) {
+                if !self.follow_marker(
+                    2,
+                    world_tiles,
+                    grid_size,
+                    win_dim,
+                    food_coords,
+                    map_pos_to_grid(ant_hill.pos, grid_size, win_dim),
+                ) {
                     self.state = STATE_WANDER;
                 }
+                self.search_for_food(world_tiles, grid_size, win_dim);
                 self.drop_marker(1, world_tiles, grid_size, win_dim);
             }
             STATE_SEARCH_BACK => {
-                self.follow_marker(1, world_tiles, grid_size, win_dim);
+                self.follow_marker(
+                    1,
+                    world_tiles,
+                    grid_size,
+                    win_dim,
+                    food_coords,
+                    map_pos_to_grid(ant_hill.pos, grid_size, win_dim),
+                );
                 self.search_for_home(ant_hill.pos);
                 self.drop_marker(2, world_tiles, grid_size, win_dim);
             }
@@ -227,29 +255,48 @@ impl Ant {
         return false;
     }
 
-    fn approach_food(&mut self, grid_size: (u32, u32), win_dim: (u32, u32)) {
+    fn approach_food(
+        &mut self,
+        grid_size: (u32, u32),
+        win_dim: (u32, u32),
+        grid: &mut Vec<Vec<Tile>>,
+        food_coords: &mut Vec<(u32, u32)>,
+    ) {
         let (grid_x, grid_y) = self.map_pos_to_grid(grid_size, win_dim);
 
         if grid_x != self.current_target_tile.0 && grid_y != self.current_target_tile.1 {
             self.move_to(self.map_target_to_pos(self.current_target_tile, grid_size, win_dim));
         } else {
             self.state = STATE_SEARCH_BACK;
+            self.take_food(self.current_target_tile, food_coords, grid);
         }
     }
 
+    // !!! Temporary Solution. Gotta have something to show on monday.
     fn follow_marker(
         &mut self,
         m_type: u8,
         world_tiles: &Vec<Vec<Tile>>,
         grid_size: (u32, u32),
         win_dim: (u32, u32),
+        food_coords: &Vec<(u32, u32)>,
+        home_coords: (u32, u32),
     ) -> bool {
         let (grid_x, grid_y) = self.map_pos_to_grid(grid_size, win_dim);
 
-        let mut strongest_marker_in_sight = 0.0;
+        let mut closest_to_target_marker_in_sight = f64::MAX;
+
         let mut found_marker = false;
 
         let mut marker_pos: (u32, u32) = (0, 0);
+
+        let mut targets: Vec<(u32, u32)> = Vec::new();
+
+        if m_type == 1 {
+            targets.push(home_coords);
+        } else if m_type == 2 {
+            targets.append(&mut food_coords.clone());
+        }
 
         for x in grid_x as i32 - self.pheromone_radius as i32
             ..grid_x as i32 + self.pheromone_radius as i32
@@ -273,12 +320,26 @@ impl Ant {
 
                     if act_marker.m_type != 0 {
                         found_marker = true;
-                    }
 
-                    if act_marker.strength > strongest_marker_in_sight {
-                        strongest_marker_in_sight = act_marker.strength;
+                        let mut min_target_dist = f64::MAX;
+                        for target in targets.iter() {
+                            let target_dist = self
+                                .map_target_to_pos(*target, grid_size, win_dim)
+                                .distance(self.map_target_to_pos(
+                                    (x as u32, y as u32),
+                                    grid_size,
+                                    win_dim,
+                                ));
+                            if target_dist < min_target_dist {
+                                min_target_dist = target_dist;
+                            }
+                        }
 
-                        marker_pos = (x as u32, y as u32);
+                        if min_target_dist < closest_to_target_marker_in_sight {
+                            closest_to_target_marker_in_sight = min_target_dist;
+
+                            marker_pos = (x as u32, y as u32);
+                        }
                     }
                 }
             }
@@ -375,5 +436,27 @@ impl Ant {
 
     pub fn set_pos(&mut self, pos: DVec2) {
         self.pos = pos;
+    }
+
+    fn take_food(
+        &mut self,
+        grid_pos: (u32, u32),
+        food_coords: &mut Vec<(u32, u32)>,
+        grid: &mut Vec<Vec<Tile>>,
+    ) {
+        if !grid[grid_pos.0 as usize][grid_pos.1 as usize].sub_food() {
+            let rm_index;
+            let index_search = food_coords.binary_search(&grid_pos);
+
+            match index_search {
+                Ok(_) => {
+                    rm_index = index_search.unwrap();
+                }
+                Err(_e) => {
+                    return;
+                }
+            }
+            food_coords.remove(rm_index);
+        }
     }
 }

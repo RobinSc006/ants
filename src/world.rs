@@ -1,3 +1,4 @@
+use rand::{distributions::Uniform, prelude::Distribution};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
 
@@ -9,6 +10,8 @@ pub struct World {
     window_size: (u32, u32),
     grid_size: (u32, u32),
     tile_size: f64,
+
+    inserted_food_coords: Vec<(u32, u32)>,
 }
 
 impl World {
@@ -29,6 +32,15 @@ impl World {
         let empty_marker = Marker::new(0);
         let empty_food = Food { concentration: 0 };
 
+        // Random food setup
+        let mut random_gen = rand::thread_rng();
+
+        let random_food_range_amount = Uniform::from(15..255);
+        let random_food_range_num = Uniform::from(2..10);
+        let random_food_range_x = Uniform::from(0..grid_size.0);
+        let random_food_range_y = Uniform::from(0..grid_size.0);
+
+        // Grid init
         for x in 0..grid_size.0 {
             tiles.push(Vec::new());
             for _ in 0..grid_size.1 {
@@ -39,24 +51,37 @@ impl World {
             }
         }
 
-        tiles[(grid_size.0 / 2 + grid_size.0 / 3) as usize][(grid_size.1 / 2) as usize] = Tile {
-            markers: (empty_marker, empty_marker),
-            food: Food { concentration: 200 },
-        };
-
-        return Self {
+        let mut world = Self {
             colony: Colony::new(colony_size, ant_color, (0, 0), *window_size),
             grid: tiles,
             window_size: *window_size,
             tile_size: desired_tile_size,
             grid_size: grid_size,
+            inserted_food_coords: Vec::new(),
         };
+
+        // Generate food
+        for _ in 0..random_food_range_num.sample(&mut random_gen) {
+            world.insert_food(
+                (
+                    random_food_range_x.sample(&mut random_gen),
+                    random_food_range_y.sample(&mut random_gen),
+                ),
+                random_food_range_amount.sample(&mut random_gen),
+            );
+        }
+
+        return world;
     }
 
     pub fn update(&mut self) {
-        self.colony
-            .update(self.window_size, self.grid_size, &mut self.grid);
-        self.update_tiles();
+        self.colony.update(
+            self.window_size,
+            self.grid_size,
+            &mut self.grid,
+            &mut self.inserted_food_coords,
+        );
+        //self.update_tiles();
     }
 
     pub fn render(&self, canvas: &mut Canvas<Window>) {
@@ -88,10 +113,11 @@ impl World {
         canvas.set_draw_color(previous_color);
     }
 
+    #[allow(dead_code)]
     fn update_tiles(&mut self) {
         self.grid.par_iter_mut().for_each(|column| {
-            column.par_iter_mut().for_each(|_tile| {
-                //tile.update();
+            column.par_iter_mut().for_each(|tile| {
+                tile.update();
             })
         })
     }
@@ -105,5 +131,7 @@ impl World {
                 concentration: amount,
             },
         };
+
+        self.inserted_food_coords.push(grid_pos);
     }
 }

@@ -23,4 +23,13 @@ impl Tile {
         self.markers.0.update();
         self.markers.1.update();
     }
+
+    /// Returns false if concentration minus one is negative
+    pub fn sub_food(&mut self) -> bool {
+        if self.food.concentration as i32 - 1 < 0 {
+            return false;
+        }
+        self.food.concentration -= 1;
+        return true;
+    }
 }

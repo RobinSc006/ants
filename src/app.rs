@@ -37,7 +37,7 @@ impl App {
         // * World setup
         let world_grid_size = (100, 100);
         let mut world = World::new(
-            5000,
+            1500,
             world_grid_size,
             &mut window_dimensions,
             10.0,
