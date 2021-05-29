@@ -223,6 +223,8 @@ impl Ant {
                     && x.is_positive()
                     && y < grid_size.1 as i32
                     && x < grid_size.0 as i32
+                    && x != grid_x as i32
+                    && y != grid_y as i32
                 {
                     if world_tiles[x as usize][y as usize].markers.0.strength
                         > strongest_marker_in_sight
