@@ -25,6 +25,8 @@ pub struct Ant {
     act_perception_radius: f64,
 
     marker_drop_strength: f64,
+    marker_drop_rate: u32,
+    ticks_since_marker: u32,
 
     current_target_tile: (u32, u32),
     wander_target_dir: DVec2,
@@ -32,6 +34,9 @@ pub struct Ant {
 
 impl Ant {
     pub fn new(pos: DVec2) -> Self {
+        let mut random_gen = rand::thread_rng();
+        let random_marker_rate = Uniform::from(2..10);
+
         Self {
             pos: pos,
 
@@ -45,6 +50,9 @@ impl Ant {
             speed: 3.5,
             wander_direction_sway: 0.25,
 
+            ticks_since_marker: 0,
+
+            marker_drop_rate: random_marker_rate.sample(&mut random_gen),
             marker_drop_strength: 0.666,
 
             current_target_tile: (0, 0),
@@ -176,12 +184,17 @@ impl Ant {
     }
 
     fn drop_marker(
-        &self,
+        &mut self,
         m_type: u8,
         world_tiles: &mut Vec<Vec<Tile>>,
         grid_size: (u32, u32),
         win_dim: (u32, u32),
     ) {
+        if !self.should_drop_marker() {
+            self.ticks_since_marker += 1;
+            return;
+        }
+
         let (grid_x, grid_y) = self.map_pos_to_grid(grid_size, win_dim);
 
         if m_type == 1 {
@@ -203,6 +216,14 @@ impl Ant {
                 .1
                 .strength += self.marker_drop_strength;
         }
+    }
+
+    fn should_drop_marker(&mut self) -> bool {
+        if self.ticks_since_marker >= self.marker_drop_rate {
+            self.ticks_since_marker = 0;
+            return true;
+        }
+        return false;
     }
 
     fn approach_food(&mut self, grid_size: (u32, u32), win_dim: (u32, u32)) {
