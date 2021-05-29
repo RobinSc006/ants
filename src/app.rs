@@ -1,9 +1,10 @@
-use crate::colony::Colony;
 use crate::config::Config;
+use crate::world::World;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
 use sdl2::pixels::Color;
+use sdl2::render::BlendMode;
 
 use std::time::Instant;
 
@@ -26,6 +27,14 @@ impl App {
     }
 
     pub fn run(&self) {
+        let mut window_dimensions = (
+            self.config.get_parameter("win_size").vals[0] as u32,
+            self.config.get_parameter("win_size").vals[1] as u32,
+        );
+
+        // * World setup
+        let mut world = World::new(100, (100, 100), &mut window_dimensions, 10.0, Color::BLACK);
+
         // ! Graphics setup --
 
         // SDL setup
@@ -33,10 +42,7 @@ impl App {
         let video_subsystem = sdl_context.video().unwrap();
 
         // Window creation
-        let window_dimensions = (
-            self.config.get_parameter("win_size").vals[0] as u32,
-            self.config.get_parameter("win_size").vals[1] as u32,
-        );
+
         let window = video_subsystem
             .window("Ants 2.0", window_dimensions.0, window_dimensions.1)
             .position_centered()
@@ -55,6 +61,8 @@ impl App {
             self.config.get_parameter("background_color").vals[2] as u8,
         ));
 
+        win_canvas.set_blend_mode(BlendMode::Blend);
+
         // Event pump creation
         let mut event_pump = sdl_context.event_pump().unwrap();
 
@@ -63,9 +71,6 @@ impl App {
         // Timing setup
         const TIMING_TICK_TIME: u128 = 25;
         let mut timing_tick_clock = Instant::now();
-
-        // World setup
-        let colony = Colony::new(100, Color::BLACK, (100, 100), (500, 500));
 
         // Main loop
         'running: loop {
@@ -86,7 +91,7 @@ impl App {
             // Tick update
 
             if timing_tick_clock.elapsed().as_millis() >= TIMING_TICK_TIME {
-                // Update
+                world.update();
 
                 timing_tick_clock = Instant::now();
             }
@@ -97,15 +102,13 @@ impl App {
             win_canvas.clear();
 
             // Render
-            colony.render(&mut win_canvas);
+            world.render(&mut win_canvas);
 
             win_canvas.present();
             // * Render end --
 
             // Delay
             std::thread::sleep(::std::time::Duration::new(0, 1_000_000_000u32 / 60));
-
-            //
         }
     }
 }

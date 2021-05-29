@@ -1,0 +1,85 @@
+use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
+
+use crate::{colony::Colony, food::Food, marker::Marker, tile::Tile};
+
+pub struct World {
+    colony: Colony,
+    grid: Vec<Vec<Tile>>,
+    window_size: (u32, u32),
+    tile_size: f64,
+}
+
+impl World {
+    pub fn new(
+        colony_size: u32,
+        grid_size: (u32, u32),
+        window_size: &mut (u32, u32),
+        desired_tile_size: f64,
+        ant_color: Color,
+    ) -> Self {
+        let window_x = grid_size.0 as f64 * desired_tile_size;
+        let window_y = grid_size.1 as f64 * desired_tile_size;
+
+        *window_size = (window_x.ceil() as u32, window_y.ceil() as u32).clone();
+
+        // Grid init
+        let mut tiles: Vec<Vec<Tile>> = Vec::new();
+        let empty_marker = Marker::new(0);
+        let empty_food = Food { concentration: 0 };
+
+        for x in 0..grid_size.0 {
+            tiles.push(Vec::new());
+            for _ in 0..grid_size.1 {
+                tiles[x as usize].push(Tile {
+                    markers: (empty_marker, empty_marker),
+                    food: empty_food,
+                });
+            }
+        }
+
+        tiles[(grid_size.0 / 2 + grid_size.0 / 3) as usize][(grid_size.1 / 2) as usize] = Tile {
+            markers: (empty_marker, empty_marker),
+            food: Food { concentration: 200 },
+        };
+
+        return Self {
+            colony: Colony::new(colony_size, ant_color, (0, 0), *window_size),
+            grid: tiles,
+            window_size: *window_size,
+            tile_size: desired_tile_size,
+        };
+    }
+
+    pub fn update(&mut self) {
+        self.colony.update();
+    }
+
+    pub fn render(&self, canvas: &mut Canvas<Window>) {
+        self.render_tiles(canvas);
+        self.colony.render(canvas);
+    }
+
+    pub fn render_tiles(&self, canvas: &mut Canvas<Window>) {
+        let previous_color = canvas.draw_color();
+
+        for x in 0..self.grid.len() {
+            for y in 0..self.grid[x].len() {
+                canvas.set_draw_color(self.grid[x][y].get_color());
+
+                match canvas.fill_rect(Rect::new(
+                    x as i32 * self.tile_size as i32,
+                    y as i32 * self.tile_size as i32,
+                    self.tile_size as u32,
+                    self.tile_size as u32,
+                )) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        log::error!("render error: {}", &e);
+                    }
+                }
+            }
+        }
+
+        canvas.set_draw_color(previous_color);
+    }
+}
