@@ -2,15 +2,12 @@ use glam::DVec2;
 use rand::{distributions::Uniform, prelude::Distribution};
 use sdl2::rect::Rect;
 
-use crate::{
-    ant_hill::AntHill,
-    tile::Tile,
-    util::{map},
-};
+use crate::{ant_hill::AntHill, marker::Marker, tile::Tile, util::map};
 
 const STATE_WANDER: u8 = 0;
 const STATE_TARGET_FOOD: u8 = 1;
 const STATE_SEARCH_BACK: u8 = 2;
+const STATE_SEARCH_EXPLORE: u8 = 4;
 const STATE_TARGET_HOME: u8 = 3;
 
 #[derive(Default)]
@@ -40,15 +37,15 @@ impl Ant {
 
             state: 0,
 
-            act_perception_radius: 75.0,
+            act_perception_radius: 50.0,
             perception_radius: 10,
-            pheromone_radius: 15,
+            pheromone_radius: 11,
 
             size: 5.5,
             speed: 3.5,
-            wander_direction_sway: 0.2,
+            wander_direction_sway: 0.25,
 
-            marker_drop_strength: 5.0,
+            marker_drop_strength: 0.666,
 
             current_target_tile: (0, 0),
             wander_target_dir: DVec2::default(),
@@ -70,14 +67,21 @@ impl Ant {
             }
             STATE_TARGET_HOME => {
                 self.approach_home(grid_size, win_dim, ant_hill);
+                self.drop_marker(2, world_tiles, grid_size, win_dim);
+            }
+            STATE_SEARCH_EXPLORE => {
+                if !self.follow_marker(2, world_tiles, grid_size, win_dim) {
+                    self.state = STATE_WANDER;
+                }
             }
             STATE_SEARCH_BACK => {
-                self.follow_marker(0, world_tiles, grid_size, win_dim);
+                self.follow_marker(1, world_tiles, grid_size, win_dim);
                 self.search_for_home(ant_hill.pos);
+                self.drop_marker(2, world_tiles, grid_size, win_dim);
             }
             _ => {
                 self.explore(world_tiles, grid_size, win_dim);
-                self.drop_explore_marker(world_tiles, grid_size, win_dim);
+                self.drop_marker(1, world_tiles, grid_size, win_dim);
             }
         }
         self.wrap_screen(win_dim);
@@ -167,26 +171,38 @@ impl Ant {
         if grid_x != home_x && grid_y != home_y {
             self.move_to(self.map_target_to_pos((home_x, home_y), grid_size, win_dim));
         } else {
-            self.state = STATE_WANDER;
+            self.state = STATE_SEARCH_EXPLORE;
         }
     }
 
-    fn drop_explore_marker(
+    fn drop_marker(
         &self,
+        m_type: u8,
         world_tiles: &mut Vec<Vec<Tile>>,
         grid_size: (u32, u32),
         win_dim: (u32, u32),
     ) {
         let (grid_x, grid_y) = self.map_pos_to_grid(grid_size, win_dim);
 
-        world_tiles[grid_x as usize][grid_y as usize]
-            .markers
-            .0
-            .m_type = 1;
-        world_tiles[grid_x as usize][grid_y as usize]
-            .markers
-            .0
-            .strength += self.marker_drop_strength;
+        if m_type == 1 {
+            world_tiles[grid_x as usize][grid_y as usize]
+                .markers
+                .0
+                .m_type = 1;
+            world_tiles[grid_x as usize][grid_y as usize]
+                .markers
+                .0
+                .strength += self.marker_drop_strength;
+        } else if m_type == 2 {
+            world_tiles[grid_x as usize][grid_y as usize]
+                .markers
+                .1
+                .m_type = 2;
+            world_tiles[grid_x as usize][grid_y as usize]
+                .markers
+                .1
+                .strength += self.marker_drop_strength;
+        }
     }
 
     fn approach_food(&mut self, grid_size: (u32, u32), win_dim: (u32, u32)) {
@@ -201,11 +217,11 @@ impl Ant {
 
     fn follow_marker(
         &mut self,
-        _m_type: u8,
+        m_type: u8,
         world_tiles: &Vec<Vec<Tile>>,
         grid_size: (u32, u32),
         win_dim: (u32, u32),
-    ) {
+    ) -> bool {
         let (grid_x, grid_y) = self.map_pos_to_grid(grid_size, win_dim);
 
         let mut strongest_marker_in_sight = 0.0;
@@ -226,14 +242,21 @@ impl Ant {
                     && x != grid_x as i32
                     && y != grid_y as i32
                 {
-                    if world_tiles[x as usize][y as usize].markers.0.strength
-                        > strongest_marker_in_sight
-                    {
-                        strongest_marker_in_sight =
-                            world_tiles[x as usize][y as usize].markers.0.strength;
+                    let mut act_marker = Marker::new(0);
+                    if m_type == 1 {
+                        act_marker = world_tiles[x as usize][y as usize].markers.0;
+                    } else if m_type == 2 {
+                        act_marker = world_tiles[x as usize][y as usize].markers.1;
+                    }
+
+                    if act_marker.m_type != 0 {
+                        found_marker = true;
+                    }
+
+                    if act_marker.strength > strongest_marker_in_sight {
+                        strongest_marker_in_sight = act_marker.strength;
 
                         marker_pos = (x as u32, y as u32);
-                        found_marker = true;
                     }
                 }
             }
@@ -242,6 +265,8 @@ impl Ant {
         if found_marker {
             self.move_to_grid_pos(marker_pos, grid_size, win_dim);
         }
+
+        return found_marker;
     }
 
     fn move_to_grid_pos(&mut self, grid: (u32, u32), grid_size: (u32, u32), win_dim: (u32, u32)) {

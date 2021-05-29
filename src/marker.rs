@@ -1,4 +1,3 @@
-
 #[allow(dead_code)]
 const DEGRADATION_RATE: f64 = 0.5;
 const DEFAULT_STRENGTH: f64 = 100.0;
