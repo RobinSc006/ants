@@ -8,6 +8,7 @@ mod config;
 mod food;
 mod marker;
 mod tile;
+mod util;
 mod world;
 
 fn main() {

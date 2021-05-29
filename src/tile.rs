@@ -7,6 +7,7 @@ pub struct Tile {
     pub food: Food,
 }
 
+#[allow(dead_code)]
 impl Tile {
     pub fn get_color(&self) -> Color {
         return Color::RGBA(
@@ -16,5 +17,10 @@ impl Tile {
             (self.markers.0.strength + self.markers.1.strength + self.food.concentration as f64)
                 .clamp(0.0, 255.0) as u8,
         );
+    }
+
+    pub fn update(&mut self) {
+        self.markers.0.update();
+        self.markers.1.update();
     }
 }

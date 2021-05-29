@@ -33,7 +33,7 @@ impl App {
         );
 
         // * World setup
-        let mut world = World::new(100, (100, 100), &mut window_dimensions, 10.0, Color::BLACK);
+        let mut world = World::new(300, (100, 100), &mut window_dimensions, 10.0, Color::BLACK);
 
         // ! Graphics setup --
 

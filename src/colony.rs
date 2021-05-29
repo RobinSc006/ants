@@ -2,12 +2,10 @@ use glam::DVec2;
 use rand::{distributions::Uniform, prelude::Distribution};
 use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
 
-use rayon::prelude::*;
-
-use crate::{ant::Ant, ant_hill::AntHill};
+use crate::{ant::Ant, ant_hill::AntHill, tile::Tile};
 
 pub struct Colony {
-    ants: Vec<Ant>,
+    pub ants: Vec<Ant>,
     ant_hill: AntHill,
 
     ant_color: Color,
@@ -41,18 +39,27 @@ impl Colony {
 
         // ? Ant hill pos
 
-        return Self {
+        let mut colony = Self {
             ants: temp_ants,
             ant_hill: AntHill::new(ant_average_pos / num_ants as f64, 25.0),
 
             ant_color: color,
         };
+
+        colony.center_ants();
+
+        return colony;
     }
 
-    pub fn update(&mut self) {
-        self.ants.par_iter_mut().for_each(|ant| {
-            ant.update();
-        })
+    pub fn update(
+        &mut self,
+        win_dim: (u32, u32),
+        grid_size: (u32, u32),
+        world_tiles: &mut Vec<Vec<Tile>>,
+    ) {
+        for ant in self.ants.iter_mut() {
+            ant.update(win_dim, grid_size, world_tiles, &self.ant_hill);
+        }
     }
 
     pub fn render(&self, canvas: &mut Canvas<Window>) {
@@ -77,6 +84,12 @@ impl Colony {
             Err(e) => {
                 log::error!("render error: {}", &e);
             }
+        }
+    }
+
+    pub fn center_ants(&mut self) {
+        for ant in self.ants.iter_mut() {
+            ant.set_pos(self.ant_hill.pos);
         }
     }
 }

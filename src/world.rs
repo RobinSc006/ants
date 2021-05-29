@@ -1,3 +1,4 @@
+use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
 
 use crate::{colony::Colony, food::Food, marker::Marker, tile::Tile};
@@ -6,6 +7,7 @@ pub struct World {
     colony: Colony,
     grid: Vec<Vec<Tile>>,
     window_size: (u32, u32),
+    grid_size: (u32, u32),
     tile_size: f64,
 }
 
@@ -47,11 +49,14 @@ impl World {
             grid: tiles,
             window_size: *window_size,
             tile_size: desired_tile_size,
+            grid_size: grid_size,
         };
     }
 
     pub fn update(&mut self) {
-        self.colony.update();
+        self.colony
+            .update(self.window_size, self.grid_size, &mut self.grid);
+        self.update_tiles();
     }
 
     pub fn render(&self, canvas: &mut Canvas<Window>) {
@@ -59,7 +64,7 @@ impl World {
         self.colony.render(canvas);
     }
 
-    pub fn render_tiles(&self, canvas: &mut Canvas<Window>) {
+    fn render_tiles(&self, canvas: &mut Canvas<Window>) {
         let previous_color = canvas.draw_color();
 
         for x in 0..self.grid.len() {
@@ -81,5 +86,13 @@ impl World {
         }
 
         canvas.set_draw_color(previous_color);
+    }
+
+    fn update_tiles(&mut self) {
+        self.grid.par_iter_mut().for_each(|column| {
+            column.par_iter_mut().for_each(|_tile| {
+                //tile.update();
+            })
+        })
     }
 }
