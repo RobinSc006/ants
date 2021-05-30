@@ -1,24 +1,23 @@
-use crate::vector::Vector;
+#[allow(dead_code)]
+const DEGRADATION_RATE: f64 = 0.5;
+const DEFAULT_STRENGTH: f64 = 100.0;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MarkerType {
-    Explore,
-    Return,
-}
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Marker {
-    pub pos: Vector,
-    /// Not named 'type', because that's build in functionality
-    pub marker_type: MarkerType,
-    pub intensity: f64,
+    pub m_type: u8,
+    pub strength: f64,
 }
-
+#[allow(dead_code)]
 impl Marker {
-    // Listen...
-    // I know what this looks like, but rust has given me no choice
-    // it might also just be my own incompetence, but that's besides
-    // the point.. PartialEq, Eq and matches! don't seem to work, so...
-    pub fn compare(&self, other: MarkerType) -> bool {
-        return &format!("{:?}", other) == &format!("{:?}", self.marker_type);
+    pub fn new(m_type: u8) -> Self {
+        return Self {
+            m_type: m_type,
+            strength: DEFAULT_STRENGTH,
+        };
+    }
+    pub fn update(&mut self) {
+        if self.m_type != 0 {
+            self.strength = (self.strength - DEGRADATION_RATE).clamp(0.0, DEFAULT_STRENGTH);
+        }
     }
 }

@@ -1,155 +1,96 @@
-use piston_window::{Event, PistonWindow};
+use glam::DVec2;
+use rand::{distributions::Uniform, prelude::Distribution};
+use sdl2::{pixels::Color, rect::Rect, render::Canvas, video::Window};
 
-use crate::{
-    ant::{Ant, State},
-    ant_hill::AntHill,
-    color::Theme,
-    food::Food,
-    marker_map::MarkerMap,
-    vector::Vector,
-};
+use crate::{ant::Ant, ant_hill::AntHill, tile::Tile};
 
 pub struct Colony {
-    ants: Vec<Ant>,
-    ant_hill: AntHill,
+    pub ants: Vec<Ant>,
+    pub ant_hill: AntHill,
 
-    num_ants: u16,
-
-    delta_time: f64,
+    ant_color: Color,
 }
 
 impl Colony {
     pub fn new(
-        num_ants: u16,
-        ant_pos: (f64, f64),
-        speed: f64,
-        wander_sway: f64,
-        sense_radius: f64,
-        pickup_radius: f64,
-        marker_radius: f64,
-        delta: f64,
-        marker_drop_rate: u8,
+        num_ants: u32,
+        color: Color,
+        spawn_area_a: (u32, u32),
+        spawn_area_b: (u32, u32),
     ) -> Self {
-        let mut colony = Self {
-            ants: Vec::new(),
-            ant_hill: AntHill::new(Vector::new(ant_pos.0, ant_pos.1), 25.0),
-            num_ants: num_ants,
+        // ? Ant spawning
+        let mut temp_ants: Vec<Ant> = Vec::new();
+        let mut ant_average_pos = DVec2::default();
 
-            delta_time: delta,
+        let mut random_gen = rand::thread_rng();
+
+        let random_range_x = Uniform::from(spawn_area_a.0..spawn_area_b.0);
+        let random_range_y = Uniform::from(spawn_area_a.1..spawn_area_b.1);
+
+        for _ in 0..num_ants {
+            let pos = DVec2::new(
+                random_range_x.sample(&mut random_gen) as f64,
+                random_range_y.sample(&mut random_gen) as f64,
+            );
+            temp_ants.push(Ant::new(pos));
+
+            ant_average_pos += pos;
+        }
+
+        // ? Ant hill pos
+
+        let mut colony = Self {
+            ants: temp_ants,
+            ant_hill: AntHill::new(ant_average_pos / num_ants as f64, 25.0),
+
+            ant_color: color,
         };
 
-        colony.populate(
-            speed,
-            wander_sway,
-            sense_radius,
-            pickup_radius,
-            marker_radius,
-            marker_drop_rate,
-        );
+        colony.center_ants();
 
         return colony;
     }
 
-    pub fn render(&self, window: &mut PistonWindow, event: &Event, theme: &Theme) {
-        for ant in self.ants.iter() {
-            ant.render(window, event, theme);
-        }
-
-        self.ant_hill.render(window, event, theme);
-    }
-
-    pub fn update(&mut self, food_on_map: &Vec<Food>, markers_on_map: &mut MarkerMap) {
-        for ant in self.ants.iter_mut() {
-            // Markers
-            if ant.state_cmp(State::Wander)
-                || ant.state_cmp(State::Target)
-                || ant.state_cmp(State::FollowReturn)
-            {
-                ant.drop_marker(crate::marker::MarkerType::Explore, markers_on_map);
-            } else if ant.state_cmp(State::FollowExplore) || ant.state_cmp(State::Home) {
-                ant.drop_marker(crate::marker::MarkerType::Return, markers_on_map);
-            }
-
-            // Collision
-            if !ant.state_cmp(State::FollowExplore) {
-                for (_index, food) in food_on_map.clone().iter().enumerate() {
-                    let dist_x = ant.pos.x - food.pos.x;
-                    let dist_y = ant.pos.y - food.pos.y;
-
-                    let sum_xy = dist_x * dist_x + dist_y * dist_y;
-
-                    if !ant.state_cmp(State::Target) {
-                        // Check if food is visible
-                        if f64::sqrt(sum_xy) <= ant.get_sense_radius() {
-                            ant.set_target(food.pos);
-                            ant.state = State::Target;
-                        }
-                    } else {
-                        // Check if food is colliding
-                        if f64::sqrt(sum_xy) <= ant.get_pickup_radius() {
-                            ant.state = State::FollowExplore;
-                        }
-                    }
-                }
-            }
-            if ant.state_cmp(State::FollowExplore) || ant.state_cmp(State::Home) {
-                // Get distance between ant hill and ant
-                let dist_x = ant.pos.x - self.ant_hill.get_pos().x;
-                let dist_y = ant.pos.y - self.ant_hill.get_pos().y;
-
-                let sum_xy = dist_x * dist_x + dist_y * dist_y;
-
-                // Check if ant senses ant hill
-                if f64::sqrt(sum_xy) <= ant.get_pickup_radius() + self.ant_hill.get_radius() {
-                    self.ant_hill.add_food();
-                    ant.state = State::FollowReturn;
-                } else if f64::sqrt(sum_xy) <= ant.get_marker_radius() + ant.get_sense_radius() {
-                    ant.set_target(self.ant_hill.get_pos());
-                    ant.state = State::Home;
-                }
-            }
-
-            ant.update(&markers_on_map);
-        }
-    }
-
-    pub fn get_num_ants(&self) -> u16 {
-        return self.ants.len() as u16;
-    }
-
-    pub fn get_num_collected_food(&self) -> u32 {
-        return self.ant_hill.get_food_amount() as u32;
-    }
-
-    fn populate(
+    pub fn update(
         &mut self,
-        speed: f64,
-        wander_sway: f64,
-        sense_radius: f64,
-        pickup_radius: f64,
-        marker_radius: f64,
-        marker_drop_rate: u8,
+        win_dim: (u32, u32),
+        grid_size: (u32, u32),
+        world_tiles: &mut Vec<Vec<Tile>>,
+        food_coords: &mut Vec<(u32, u32)>,
     ) {
-        let spawn_area = (
-            self.ant_hill.get_pos(),
-            self.ant_hill.get_pos()
-                + Vector::new(
-                    self.ant_hill.get_radius() / 2.0,
-                    self.ant_hill.get_radius() / 2.0,
-                ),
-        );
+        for ant in self.ants.iter_mut() {
+            ant.update(win_dim, grid_size, world_tiles, &self.ant_hill, food_coords);
+        }
+    }
 
-        for _ in 0..self.num_ants {
-            self.ants.push(Ant::new(
-                spawn_area,
-                self.delta_time,
-                speed,
-                wander_sway,
-                sense_radius,
-                pickup_radius,
-                marker_radius,
-                marker_drop_rate,
-            ));
+    pub fn render(&self, canvas: &mut Canvas<Window>) {
+        let previous_color = canvas.draw_color();
+        canvas.set_draw_color(self.ant_color);
+
+        self.render_ants(canvas);
+        self.ant_hill.render(canvas);
+
+        canvas.set_draw_color(previous_color);
+    }
+
+    fn render_ants(&self, canvas: &mut Canvas<Window>) {
+        let mut ant_rects: Vec<Rect> = Vec::new();
+
+        for ant in self.ants.iter() {
+            ant_rects.push(ant.get_render_target());
+        }
+
+        match canvas.fill_rects(&ant_rects) {
+            Ok(_) => {}
+            Err(e) => {
+                log::error!("render error: {}", &e);
+            }
+        }
+    }
+
+    pub fn center_ants(&mut self) {
+        for ant in self.ants.iter_mut() {
+            ant.set_pos(self.ant_hill.pos);
         }
     }
 }

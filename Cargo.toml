@@ -7,10 +7,17 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-piston_window = "*"
-image = "*"
-find_folder = "*"
+tokio = { version = "1", features = ["full"] }
+rayon = "*"
+glam = "*"
 rand = "*"
+log = "*"
+pretty_env_logger = "*"
+find_folder = "*"
+
+[dependencies.sdl2]
+features = ["bundled"]
+version = "*"
 
 [profile.release]
 lto = "fat"
