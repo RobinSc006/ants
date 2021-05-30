@@ -35,13 +35,20 @@ impl App {
         );
 
         // * World setup
-        let world_grid_size = (100, 100);
+        let world_grid_size = (
+            self.config.get_parameter("grid_dim").vals[0] as u32,
+            self.config.get_parameter("grid_dim").vals[1] as u32,
+        );
         let mut world = World::new(
-            1500,
+            self.config.get_parameter("num_ants").vals[0] as u32,
             world_grid_size,
             &mut window_dimensions,
-            10.0,
+            self.config.get_parameter("tile_size").vals[0],
             Color::BLACK,
+            (
+                self.config.get_parameter("food_amount_range").vals[0] as u32,
+                self.config.get_parameter("food_amount_range").vals[1] as u32,
+            ),
         );
 
         // ! Graphics setup --
@@ -100,7 +107,7 @@ impl App {
                                 world_grid_size,
                                 window_dimensions,
                             ),
-                            255,
+                            2000,
                         );
                     }
                     _ => {}

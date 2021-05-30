@@ -6,7 +6,7 @@ use crate::{ant::Ant, ant_hill::AntHill, tile::Tile};
 
 pub struct Colony {
     pub ants: Vec<Ant>,
-    ant_hill: AntHill,
+    pub ant_hill: AntHill,
 
     ant_color: Color,
 }

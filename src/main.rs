@@ -11,6 +11,7 @@ mod tile;
 mod util;
 mod world;
 
+// Yeah sorry not gonna add documentation
 fn main() {
     let app = App::init();
     app.run();

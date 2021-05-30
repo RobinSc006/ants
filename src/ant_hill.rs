@@ -16,7 +16,7 @@ impl AntHill {
             pos: pos,
             size: size,
             food_collected: 0,
-            color: Color::BLUE,
+            color: Color::RGBA(200, 80, 5, 255),
         };
     }
 

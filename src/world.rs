@@ -21,6 +21,8 @@ impl World {
         window_size: &mut (u32, u32),
         desired_tile_size: f64,
         ant_color: Color,
+
+        min_max_food: (u32, u32),
     ) -> Self {
         let window_x = grid_size.0 as f64 * desired_tile_size;
         let window_y = grid_size.1 as f64 * desired_tile_size;
@@ -35,8 +37,8 @@ impl World {
         // Random food setup
         let mut random_gen = rand::thread_rng();
 
-        let random_food_range_amount = Uniform::from(15..255);
-        let random_food_range_num = Uniform::from(2..10);
+        let random_food_range_amount = Uniform::from(1500..3000);
+        let random_food_range_num = Uniform::from(min_max_food.0..min_max_food.1);
         let random_food_range_x = Uniform::from(0..grid_size.0);
         let random_food_range_y = Uniform::from(0..grid_size.0);
 
@@ -113,6 +115,7 @@ impl World {
         canvas.set_draw_color(previous_color);
     }
 
+    // ! Working, but doesn't really add anything
     #[allow(dead_code)]
     fn update_tiles(&mut self) {
         self.grid.par_iter_mut().for_each(|column| {
